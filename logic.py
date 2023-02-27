@@ -55,7 +55,7 @@ class game:
 
     def play(self,defe, att1, att2=None):  
         if self.active_table==[]:
-            b=att1.attack([])                    #return 0 if defending player wins, otherwise 1
+            b=att1.attack([])               #return 0 if defending player wins, otherwise 1
             self.active_table+=b
         if self.passive_table==[] and defe.schiebt(self.active_table):                            #dont change table, but next player will be attacked
             return 1
