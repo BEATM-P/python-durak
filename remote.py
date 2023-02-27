@@ -12,8 +12,10 @@ class remote(player):
     def attack(self,table):
         self.sock.sendall(("A"+str(table)+"|").encode())
         data=self.sock.recv(1024)
-        #parse data
-        return data
+        data=str(data)
+        data=data[2:]
+        data=data[:len(data)-1]
+        return data.split(",")
 
     def defend(self, table):
         self.sock.sendall(("D"+str(table)+"|").encode())
@@ -24,18 +26,24 @@ class remote(player):
     def schiebt(self,table):
         self.sock.sendall(("S"+str(table)+"|").encode())
         data=self.sock.recv(1024)
-        #parse data
-        return data
+        data=str(data)
+        data=data[2:]
+        data=data[:len(data)-1]
+        return data.split(",")
 
     def finished(self):
         self.sock.sendall(b"F|")
         data=self.sock.recv(1024)
-        #parse data
-        return data
+        data=str(data)
+        data=data[2:]
+        data=data[:len(data)-1]
+        return data=="True"
 
     def active(self):
         self.sock.sendall(b"C|")        
         data=self.sock.recv(1024)
-        #parse data
-        return data
+        data=str(data)
+        data=data[2:]
+        data=data[:len(data)-1]
+        return data=="True"
 

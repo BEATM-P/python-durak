@@ -41,15 +41,17 @@ class game:
         self.passive_table=[]
         n=len(self.players)
         while n>1:
+            n=len(self.players)
             if n>2:      
                 self.playernum+=self.play(self.players[self.playernum],self.players[self.playernum-1], self.players[self.playernum+1])
             else:
                 self.playernum+=self.play(self.players[self.playernum],self.players[self.playernum-1])  
-            if self.table==[]:              #if table is not empty attack is still going(schiebung)
+            if self.active_table==[]:              #if table is not empty attack is still going(schiebung)
                 for i in self.players:
                     i.take_stack(6-len(i.cards))
                     if i.isDone():
-                        self.players.remove(i)              #if there are no more cards and a player has no cards hes finished
+                        self.players.remove(i)    
+                self.passive_table=[]          #if there are no more cards and a player has no cards hes finished
             self.playernum % len(self.players)
         
 

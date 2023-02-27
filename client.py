@@ -40,9 +40,9 @@ class local(player):
     def active(self,table):
         print(table)
         if input("Write anything to try defending this attack")=="":
-            return False
+            return ["F"]
         else:
-            return True
+            return ["T"]
         
 
     def defend(self, table):
@@ -63,8 +63,10 @@ class local(player):
         return res,table
         
     def schiebt(self,table):
-        window.display(table)
-        return table[0][1]==window.getCard(self.name,self.cards)
+        #window.display(table)
+        #return table[0][1]==window.getCard(self.name,self.cards)
+        return ["F"]
+
 
 def convert(string):
     string=string[2:]
@@ -84,13 +86,13 @@ def handle(data, player):
         return player.defend(convert(data[1:]))
         
     elif data[0]=='S':
-        return player.schiebt(convert(data[1:]))    
+        return [player.schiebt(convert(data[1:]))]  
     
     elif data[0]=='F':
-        return player.finished(convert(data[1:]))
+        return [player.finished(convert(data[1:]))]
     
     elif data[0]=='C':
-        return player.active(convert(data[1:]))
+        return [player.active(convert(data[1:]))]
 
     print(data)
     raise Exception("Communication Failed")
