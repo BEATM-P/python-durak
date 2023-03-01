@@ -4,9 +4,9 @@ from player import player
 
 
 class local(player):
-    def __init__(self):
+    def __init__(self, name):
         self.cards=[]
-        self.name=input("name")
+        self.name=input(name)
 
     def take(self,card):
         self.cards+=card
@@ -33,7 +33,7 @@ class local(player):
             elif b in self.cards:       #TODO check if valid move
                 table.append(b)
                 res.append(b)
-                self.cards.remove(a)
+                self.cards.remove(b)
             else:
                 print("Invalid Input")
 
@@ -69,59 +69,103 @@ class local(player):
 
 
 def convert(string):
-    string=string[2:]
+    string=string[1:]
     string=string[:len(string)-1]
+    string.replace("'","")
     return string.split(',')
 
 
-def handle(data, player):
-    print(data[0])
-    if data[0]=='T':
-        player.take(convert(data[1:]))
-        return 'T'
-    elif data[0]=='A':
-        return player.attack(convert(data[1:]))
-         
-    elif data[0]=='D':
-        return player.defend(convert(data[1:]))
+
+
+
+class client():
+    def __init__(self,name=None, port=None):
+        if name==None:
+            name=input(name)
+        if port==None:
+            port=int(input(port))
         
-    elif data[0]=='S':
-        return [player.schiebt(convert(data[1:]))]  
+
+        ##setup internet connection to hosting server
+        self.player=local(name)
+        self.sock=socket.socket()
+        host=socket.gethostbyname("localhost")
+        self.sock.bind((host,port))
+        self.sock.connect(("127.0.0.1", 5003))
+        self.sock.sendall(player.name.encode())
+
+
+        ##continuosly receive messages, let the player do a move and send the move back to server
+        while True:
+            req=self.receive()
+            for i in req.split('|'):           ##sometimes the server sends multiple moves at the same time
+                res=self.handle(req)        ##moves are separated by | charac
+                if res=='0':
+                    break;
+                elif res!=None:
+                    self.send(res)
+
+
+    def receive(self):
+        rec=self.sock.receive(512)
+        rec.decode()
+        print(rec)
+        return rec
+        
+    def handle(self, data):           #TODO: Implement a case for gamestate being transmitted
+        print(data)
+        action=data[0]              #determines which move is being requested
+        data=data[1:]               
+        list=data.strip('][').replace("'","").split(', ')
+        if action=='T':
+            self.player.take(list)
+            return ""
+        elif action=='A':
+            return self.player.attack(list)     
+         
+        elif action=='D':
+            return self.player.defend(list)
+        
+        elif action=='S':
+            return self.player.schiebt(list)  
+
+        # elif action=='F':
+        #     return self.player.finished()
     
-    elif data[0]=='F':
-        return [player.finished(convert(data[1:]))]
-    
-    elif data[0]=='C':
-        return [player.active(convert(data[1:]))]
+        # elif action=='C':
+        #     return self.player.active()
 
-    print(data)
-    raise Exception("Communication Failed")
-    
+        print(data)
+        raise Exception("Communication Failed")
+
+       
+    # def run_client(name=None, port=None):
+        
 
 
 
-player=local()
+    #         #address=(input("server ip address"), int(input("server port")))
+    #         s=socket.socket()
+    #         host=socket.gethostbyname("localhost")
+    #         print(host)
+    #         s.bind((host, port))
+    #         s.connect()            
+    #         s.sendall(player.name.encode())
 
-with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            #address=(input("server ip address"), int(input("server port")))
-            s=socket.socket()
-            host=socket.gethostbyname("localhost")
-            print(host)
-            s.bind((host,int(input("Port"))))
-            s.connect(("127.0.0.1", 5003))
-            
-            s.sendall(player.name.encode())
-            while True:
-                data=s.recv(1024)
-                st=str(data)
-                print(st)
-                st=st[2:]
-                st=st[:len(st)-1]
-                send=[]
-                for i in st.split('|'):
-                    if i !="":
-                        send+=handle(i,player)
-                if send=='0':
-                    break
-                else:
-                    s.sendall(str(send).encode())
+
+    #         while True:
+    #             data=s.recv(1024).decode()
+    #             print(data)
+    #             #data=data[1:]
+    #             data=data[:len(data)-1]
+    #             send=[]
+    #             for i in data.split('|'):
+    #                 if i !="":
+    #                     send+=handle(i,player)
+    #             if send=='0':
+    #                 break
+    #             else:
+    #                 s.sendall(str(send).replace(" ","").encode())
+
+
+

@@ -43,9 +43,9 @@ class game:
         while n>1:
             n=len(self.players)
             if n>2:      
-                self.playernum+=self.play(self.players[self.playernum],self.players[self.playernum-1], self.players[self.playernum+1])
+                self.playernum+=self.play(self.players[self.playernum % n],self.players[(self.playernum-1) % n], self.players[self.playernum+1])
             else:
-                self.playernum+=self.play(self.players[self.playernum],self.players[self.playernum-1])  
+                self.playernum+=self.play(self.players[self.playernum % n],self.players[(self.playernum-1) % n])  
             if self.active_table==[]:              #if table is not empty attack is still going(schiebung)
                 for i in self.players:
                     i.take_stack(6-len(i.cards))
@@ -56,6 +56,8 @@ class game:
         
 
     def play(self,defe, att1, att2=None):  
+        print(defe.cards)
+        print(att1.cards)
         if self.active_table==[]:
             b=att1.attack([])               #return 0 if defending player wins, otherwise 1
             self.active_table+=b
@@ -63,11 +65,15 @@ class game:
             return 1
         if att2!=None:
             self.table+=att2.attack(self.active_table)   
-        while defe.active(self.active_table) and len(self.active_table)<len(defe.cards):
-            self.passive_table+=defe.defend(self.active_table)
+        while len(self.active_table)<len(defe.cards):
+            a = defe.defend(self.active_table)
+            if a == []:
+                break;
+            self.passive_table+=a
             self.active_table+=att1.attack(self.active_table+self.passive_table)
             if att2!=None:
                 self.active_table+=att2.attack(self.active_table+self.passive_table)
+            
         if self.active_table== []:
             return 1                    #-> p2 has won-> return 0
         else:

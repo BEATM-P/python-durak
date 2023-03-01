@@ -2,34 +2,38 @@ import socket
 from logic import game
 from remote import remote
 
+class server():
+    def __init__(self, n_player=None):
+        if n_player==None:                      #script is being executed in terminal; else script is run from test
+            n_player=int(input("how many players?"))
 
-n_player=int(input("how many players?"))
+        session=game()
 
-known_port = 50002
+        #setup internet connections
+        self.setup()
+        while True: 
+            clients=[]
+            while True:
+                c, address=self.sock.accept()
+                data = c.recv(1024)
+                print('connection from: {}'.format(address))
+                p=remote(c, data)
+                session.players.append(p)
+                #sock.sendto(b'ready', address)
+                clients.append(c)
 
-sock = socket.socket()
-host=socket.gethostbyname("localhost")
-print(host)
-sock.bind((host,5003))
- 
-session=game()
-sock.listen(5)
-while True:
-    clients=[]
+                if len(clients)==n_player:
+                    print('all players connected starting game')
+                    break
+            session.setup()
+            session.game()
 
-    while True:
-        c, address=sock.accept()
-        data = c.recv(1024)
-        print('connection from: {}'.format(address))
-        p=remote(c, data)
-        session.players.append(p)
-        #sock.sendto(b'ready', address)
-        clients.append(c)
+            print("game finished")
 
-        if len(clients)==n_player:
-            print('all players connected starting game')
-            break
-    session.setup()
-    session.game()
 
-    print("game finished")
+    def setup(self):
+        self.sock = socket.socket()
+        host=socket.gethostbyname("localhost")
+        print(host)
+        self.sock.bind((host,5003))
+        self.sock.listen(5)  
