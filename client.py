@@ -1,12 +1,15 @@
-import socket
+import socketio
+import asyncio
+
 import window
+
 from player import player
 
 
 class local(player):
     def __init__(self, name):
         self.cards=[]
-        self.name=input(name)
+        self.name=(name)
 
     def take(self,card):
         self.cards+=card
@@ -36,14 +39,7 @@ class local(player):
                 self.cards.remove(b)
             else:
                 print("Invalid Input")
-
-    def active(self,table):
-        print(table)
-        if input("Write anything to try defending this attack")=="":
-            return ["F"]
-        else:
-            return ["T"]
-        
+       
 
     def defend(self, table):
         res=[]
@@ -65,107 +61,66 @@ class local(player):
     def schiebt(self,table):
         #window.display(table)
         #return table[0][1]==window.getCard(self.name,self.cards)
-        return ["F"]
-
-
-def convert(string):
-    string=string[1:]
-    string=string[:len(string)-1]
-    string.replace("'","")
-    return string.split(',')
-
-
-
-
+        return [False]
 
 class client():
     def __init__(self,name=None, port=None):
         if name==None:
-            name=input(name)
+            name=input('name')
         if port==None:
-            port=int(input(port))
+            port=int(input('port'))
         
-
+    async def setup(self):
         ##setup internet connection to hosting server
-        self.player=local(name)
-        self.sock=socket.socket()
-        host=socket.gethostbyname("localhost")
-        self.sock.bind((host,port))
-        self.sock.connect(("127.0.0.1", 5003))
-        self.sock.sendall(player.name.encode())
+        self.player=local("lel")
+        self.sio=socketio.AsyncClient()
+
+        @self.sio.event
+        async def connect():
+            await self.sio.emit('namechange', 'player')
+            #if input("Press anything to mark ready")=="1":
+            #    print("ready")
+            await self.sio.emit('sta', None)
+            #    print("debug")
+
+        @self.sio.event
+        def take(data):
+            self.player.take(data)
+
+        @self.sio.event
+        async def attack(data):
+            await self.sio.emit('attaking', self.player.attack(data))
+
+        @self.sio.event
+        async def defend(data):
+            await self.sio.emit(self.player.defend(data))
+        
+        @self.sio.event
+        async def schiebt(data):
+            await self.sio.emit('schiebing',self.player.defend(data))
+
+        @self.sio.event
+        def finished():
+            self.player.finished()
+            
+        @self.sio.event
+        async def change_game_state():
+            await self.sio.emit('get_game_state')
+
+        @self.sio.event
+        def recv_game_state(data):
+            print(data)
 
 
-        ##continuosly receive messages, let the player do a move and send the move back to server
+        await self.sio.connect('http://0.0.0.0:8080/')
+
+        await self.sio.emit('test')
+        
+
+        
+
         while True:
-            req=self.receive()
-            for i in req.split('|'):           ##sometimes the server sends multiple moves at the same time
-                res=self.handle(req)        ##moves are separated by | charac
-                if res=='0':
-                    break;
-                elif res!=None:
-                    self.send(res)
+            pass
 
-
-    def receive(self):
-        rec=self.sock.receive(512)
-        rec.decode()
-        print(rec)
-        return rec
-        
-    def handle(self, data):           #TODO: Implement a case for gamestate being transmitted
-        print(data)
-        action=data[0]              #determines which move is being requested
-        data=data[1:]               
-        list=data.strip('][').replace("'","").split(', ')
-        if action=='T':
-            self.player.take(list)
-            return ""
-        elif action=='A':
-            return self.player.attack(list)     
-         
-        elif action=='D':
-            return self.player.defend(list)
-        
-        elif action=='S':
-            return self.player.schiebt(list)  
-
-        # elif action=='F':
-        #     return self.player.finished()
-    
-        # elif action=='C':
-        #     return self.player.active()
-
-        print(data)
-        raise Exception("Communication Failed")
-
-       
-    # def run_client(name=None, port=None):
-        
-
-
-
-    #         #address=(input("server ip address"), int(input("server port")))
-    #         s=socket.socket()
-    #         host=socket.gethostbyname("localhost")
-    #         print(host)
-    #         s.bind((host, port))
-    #         s.connect()            
-    #         s.sendall(player.name.encode())
-
-
-    #         while True:
-    #             data=s.recv(1024).decode()
-    #             print(data)
-    #             #data=data[1:]
-    #             data=data[:len(data)-1]
-    #             send=[]
-    #             for i in data.split('|'):
-    #                 if i !="":
-    #                     send+=handle(i,player)
-    #             if send=='0':
-    #                 break
-    #             else:
-    #                 s.sendall(str(send).replace(" ","").encode())
-
-
-
+a=client('n', 4)
+asyncio.run(a.setup())
