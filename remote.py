@@ -1,5 +1,8 @@
 from player import player
 
+        
+
+
 class remote(player):
     def __init__(self,sio,sid):
         super(player,self).__init__()
@@ -7,29 +10,36 @@ class remote(player):
         self.sid=sid
         self.name="player"
         self.cards=[]
+        self.data=None
 
-    def take(self,card):
+    def get_data(self, data):
+        self.data=data
+
+
+    async def take(self,card):
         self.cards+=card
-        self.sio.emit('take', card, self.sid)
-        self.sio.emit('changed_game_state', None, 'all')
+        await self.sio.call('take', card, self.sid, callback=self.get_data())
+        await self.sio.emit('changed_game_state', None, 'all')
+        
 
-    def attack(self,table):
-        self.sio.emit('attack', table, self.sid)
-        self.sio.emit('changed_game_state', None, 'all')
-        #for i in list:
-        #    self.cards.remove(i)
-        return list
+    async def attack(self,table):
+        await self.sio.call('attack', table, self.sid, callback=self.get_data())
+        await self.sio.emit('changed_game_state', None, 'all')
+        return self.data
+                
 
-    def defend(self, table):
-        self.sio.emit('defend', table, self.sid)
-        self.sio.emit('changed_game_state', None, 'all')
+    async def defend(self, table):
+        await self.sio.call('defend', table, self.sid, callback=self.get_data())
+        await self.sio.emit('changed_game_state', None, 'all')
+        return self.data
 
+    async def schiebt(self,table):
+        await self.sio.call('schiebt', table, self.sid, callback=self.get_data())
+        await self.sio.emit('changed_game_state',None,'all')
+        return self.data
 
-    def schiebt(self,table):
-        self.sio.emit('schiebt', table, self.sid)
-
-    def finished(self):
-        self.sio.emit('finished', None, self.sid)
-        self.sio.emit('changed_game_state',None,'all')
+    async def finished(self):
+        await self.sio.call('finished', None, self.sid)
+        await self.sio.emit('changed_game_state',None,'all')
 
 

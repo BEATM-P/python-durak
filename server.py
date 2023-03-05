@@ -11,7 +11,7 @@ class server():
             n_player=int(input("how many players?"))
 
         self.session=game()
-        self.votes= {}
+        self.votes= set()
 
         self.sio = socketio.AsyncServer(logger=True, engineio_logger=True, async_mode='aiohttp')
         app=web.Application()
@@ -27,17 +27,17 @@ class server():
             self.sio.enter_room(sid, 'all')
             self.session.players.append(remote(self.sio,sid))
 
-        @self.sio.on('start')
-        async def sta(sid, environ):
+        @self.sio.event
+        async def sta(sid):
             print("ready:", sid)
             self.votes.add(sid)
             if len(self.votes)>=n_player:
-                self.sio.emit('message',"Game starting", 'all')
+                await self.sio.emit('message',"Game starting", 'all')
                 self.session.setup()
-                self.session.game()
+                await self.session.game()
                 
             else:
-                self.sio.emit('message', ('Players ready: '+str(len(self.votes))), 'all')
+                await self.sio.emit('message', ('Players ready: '+str(len(self.votes))), 'all')
 
         @self.sio.event
         def name(sid, name):

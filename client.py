@@ -75,17 +75,15 @@ class client():
         self.player=local("lel")
         self.sio=socketio.AsyncClient()
 
+
+        ##MISC EVENTS
         @self.sio.event
         async def connect():
             await self.sio.emit('namechange', 'player')
-            #if input("Press anything to mark ready")=="1":
-            #    print("ready")
-            await self.sio.emit('sta', None)
-            #    print("debug")
-
-        @self.sio.event
-        def take(data):
-            self.player.take(data)
+            if self.ready_condition():
+                print("ready")
+                await self.sio.emit('sta')
+                print("debug")
 
         @self.sio.event
         async def attack(data):
@@ -107,16 +105,45 @@ class client():
         async def change_game_state():
             await self.sio.emit('get_game_state')
 
+
+        ##UI EVENTs
         @self.sio.event
         def recv_game_state(data):
             print(data)
 
 
+        ##PLAYER EVENTS
+        @self.sio.event
+        def take(card):
+            self.player.take(card)
+
+        @self.sio.event
+        def attack(card):
+            return self.player.attack(card)
+
+        @self.sio.event
+        def defend(card):
+            return self.player.defend(card)
+
+        @self.sio.event
+        def schiebt(card):
+            return self.player.schiebt(card)
+
+        @self.sio.event
+        def finished():
+            self.player.finished
+
+
         await self.sio.connect('http://0.0.0.0:8080/')
 
-        await self.sio.emit('test')
-        
 
+        await self.sio.emit('test')
+
+        await self.sio.wait()
+
+    def ready_condition(self):
+        a=input("Ready? y/n")
+        return a=='y'
         
 
         while True:

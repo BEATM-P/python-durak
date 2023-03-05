@@ -35,7 +35,7 @@ class game:
         if self.curr_deck !=[]:
             return self.curr_deck.pop()
 
-    def game(self):
+    async def game(self):
         self.playernum=1                 #determines which player gets attacked TODO Find lowest trump card
         self.active_table=[]
         self.passive_table=[]
@@ -43,9 +43,9 @@ class game:
         while n>1:
             n=len(self.players)
             if n>2:      
-                self.playernum+=self.play(self.players[self.playernum % n],self.players[(self.playernum-1) % n], self.players[self.playernum+1])
+                self.playernum+=await self.play(self.players[self.playernum % n],self.players[(self.playernum-1) % n], self.players[self.playernum+1])
             else:
-                self.playernum+=self.play(self.players[self.playernum % n],self.players[(self.playernum-1) % n])  
+                self.playernum+=await self.play(self.players[self.playernum % n],self.players[(self.playernum-1) % n])  
             if self.active_table==[]:              #if table is not empty attack is still going(schiebung)
                 for i in self.players:
                     i.take_stack(6-len(i.cards))
@@ -55,11 +55,11 @@ class game:
             self.playernum % len(self.players)
         
 
-    def play(self,defe, att1, att2=None):  
+    async def play(self,defe, att1, att2=None):  
         print(defe.cards)
         print(att1.cards)
         if self.active_table==[]:
-            b=att1.attack([])               #return 0 if defending player wins, otherwise 1
+            b=await att1.attack([])               #return 0 if defending player wins, otherwise 1
             self.active_table+=b
         if self.passive_table==[] and defe.schiebt(self.active_table):                            #dont change table, but next player will be attacked
             return 1
