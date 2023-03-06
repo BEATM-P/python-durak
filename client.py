@@ -10,7 +10,7 @@ class local(player):
     def __init__(self, name):
         self.cards=[]
         self.name=(name)
-
+        self.trump=None
     def take(self,card):
         self.cards+=card
         print("taking "+(str(card)))
@@ -39,29 +39,38 @@ class local(player):
                 self.cards.remove(b)
             else:
                 print("Invalid Input")
+
        
 
     def defend(self, table):
-        res=[]
-        
-        print(table)
-        for i in table:
-            print("select card to defend "+i)
+        cards=[]
+        trumps=[]
+        while table!=[]:
+            print(table)
+            a=int(input("select card index to defend"))
             print(self.cards)
-            a=input()
-            if a=="":
+            b=(input("which card to defend with"))
+            if b=="":
                 break;
-            elif a in self.cards and a[0]==i[0] and int(a[1])>int(i[1]):
-                res.append((a,i))
-                table.remove(i)
+            b=int(b)
+            card=table[a]
+            trump=self.cards[b]
+            if card[0]==trump[0] and card[1]<trump[1]:
+                table.remove(card)
+                cards.append(card)
+                trumps.append(trump)
+            elif card[0]!=trump[0] and trump[0]==self.trump[0]:
+                table.remove(card)
+                cards.append(card)
+                trumps.append(trump)
             else:
                 print("invalid input. Give empty input to concede")
-        return res,table
+        return cards, trumps
         
     def schiebt(self,table):
         #window.display(table)
         #return table[0][1]==window.getCard(self.name,self.cards)
-        return [False]
+        return None
 
 class client():
     def __init__(self,name=None, port=None):
@@ -86,20 +95,8 @@ class client():
                 print("debug")
 
         @self.sio.event
-        async def attack(data):
-            await self.sio.emit('attaking', self.player.attack(data))
-
-        @self.sio.event
-        async def defend(data):
-            await self.sio.emit(self.player.defend(data))
-        
-        @self.sio.event
-        async def schiebt(data):
-            await self.sio.emit('schiebing',self.player.defend(data))
-
-        @self.sio.event
-        def finished():
-            self.player.finished()
+        def trump(string):
+            self.player.trump=string
             
         @self.sio.event
         async def change_game_state():

@@ -15,7 +15,6 @@ class server():
 
         self.sio = socketio.AsyncServer(logger=True, engineio_logger=True, async_mode='aiohttp')
         app=web.Application()
-
 #        self.sio.listen('', 5005)
         self.print_con_info()
         
@@ -33,8 +32,10 @@ class server():
             self.votes.add(sid)
             if len(self.votes)>=n_player:
                 await self.sio.emit('message',"Game starting", 'all')
-                self.session.setup()
+                await self.session.setup()
+                await self.sio.emit('trump', self.session.table.trump, 'all')
                 await self.session.game()
+                
                 
             else:
                 await self.sio.emit('message', ('Players ready: '+str(len(self.votes))), 'all')
