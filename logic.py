@@ -1,7 +1,7 @@
 import random
 from remote import remote
 
-cards=[ 'H1', 'H2', 'H3', 'H4,','H5', 'H6', 'H7', 'H8', 'H9',
+cards=[ 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'H7', 'H8', 'H9',
         'S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9',
         'E1', 'E2', 'E3', 'E4', 'E5', 'E6', 'E7', 'E8', 'E9',
         'B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8', 'B9']
@@ -34,8 +34,8 @@ class game:
                     if self.table.stack_empty() and len(i.cards)==0:
                         i.finished()
                         self.player.remove(i)
-                    while not (self.table.stack_empty()) and len(i.cards)<6:
-                        i.take(self.table.get_card())
+                    while (not self.table.stack_empty()) and len(i.cards)<6:
+                        await i.take(self.table.get_card())
                         
             self.playernum % len(self.players)
         
