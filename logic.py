@@ -56,6 +56,8 @@ class game:
             a,b =await defe.defend(self.table.active)
             if a == []:
                 break;
+            for i in b:
+                self.player.cards.remove(b)
             self.table.remove_active(a,b)
             self.table.add_active(await att1.attack(list(self.table.numbers)))
             if att2!=None:

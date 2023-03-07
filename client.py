@@ -59,10 +59,12 @@ class local(player):
                 table.remove(card)
                 cards.append(card)
                 trumps.append(trump)
+                self.cards.remove(trump)
             elif card[0]!=trump[0] and trump[0]==self.trump[0]:
                 table.remove(card)
                 cards.append(card)
                 trumps.append(trump)
+                self.cards.remove(trump)
             else:
                 print("invalid input. Give empty input to concede")
         return cards, trumps
