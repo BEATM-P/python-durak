@@ -4,7 +4,7 @@ import os
 
 path=os.path.dirname(os.path.abspath(__file__))
 
-print(path)
+print(path+'/data/H6.jpg')
 app=QApplication([])
 
 
@@ -13,7 +13,7 @@ q=QWidget()
 label=QLabel()
 
 image=QImage()
-image.load('H6.png')
+image.load(path+'/data/H6.jpg')
 
 label.setPixmap(QPixmap.fromImage(image))
 
