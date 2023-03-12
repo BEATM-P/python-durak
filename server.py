@@ -1,6 +1,6 @@
 import socketio
 from aiohttp import web
-
+import socket
 
 from logic import game
 from remote import remote
@@ -73,7 +73,10 @@ class server():
 
 
     def print_con_info(self):
-        print("info")               # TODO: print out host ip and port so other client players can specify server to connect to
+        host=socket.gethostname()
+        IP = socket.gethostbyname(host)
+        print("info:  ")
+        print(host, IP)               # TODO: print out host ip and port so other client players can specify server to connect to
 
 
         #print(host)
