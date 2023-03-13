@@ -1,8 +1,7 @@
 import socketio
 import asyncio
 
-import window
-
+#from window import *
 from player import player
 
 
@@ -75,14 +74,13 @@ class local(player):
         return None
 
 class client():
-    def __init__(self,name=None, port=None):
-        if name==None:
-            name=input('name')
-        if port==None:
-            port=int(input('port'))
+    def __init__(self):
+        self.server=""
+        self.name=""
         
     async def setup(self):
         ##setup internet connection to hosting server
+    
         self.player=local("lel")
         self.sio=socketio.AsyncClient()
 
@@ -133,10 +131,7 @@ class client():
             self.player.finished
 
 
-        await self.sio.connect('http://0.0.0.0:8080/')
-
-
-        await self.sio.emit('test')
+        #await self.sio.connect(self.server)
 
         await self.sio.wait()
 
@@ -148,5 +143,5 @@ class client():
         while True:
             pass
 
-a=client('n', 4)
-asyncio.run(a.setup())
+# a=client('n', 4)
+#asyncio.run(a.setup())

@@ -1,6 +1,8 @@
 import socketio
 from aiohttp import web
 import socket
+import upnpy
+
 
 from logic import game
 from remote import remote
@@ -14,6 +16,7 @@ class server():
         self.votes= set()
 
         self.sio = socketio.AsyncServer(logger=True, engineio_logger=True, async_mode='aiohttp')
+        portforwarding()
         app=web.Application()
 #        self.sio.listen('', 5005)
         self.print_con_info()
@@ -25,6 +28,7 @@ class server():
             print(sid)
             self.sio.enter_room(sid, 'all')
             self.session.players.append(remote(self.sio,sid))
+            self.sio.emit("message", f'Connection from {sid}', 'all',skip_sid=sid)
 
         @self.sio.event
         async def sta(sid):
@@ -70,7 +74,7 @@ class server():
 
         print("game finished")
 
-
+# Example output of the get_input_arguments method for the "AddPortMapping" action
 
     def print_con_info(self):
         host=socket.gethostname()
@@ -82,6 +86,36 @@ class server():
         #print(host)
         #self.self.sio.bind((host,5003))
         #self.self.sio.listen(5)  
+
+
+def portforwarding():
+    print("portforwarding")
+    #see https://upnpy.readthedocs.io/en/latest/Introduction/
+    upnp=upnpy.UPnP() 
+
+    devices=upnp.discover()
+
+    device=upnp.get_igd()
+
+    service=device['WANIPConn1']
+
+    service.get_actions()
+
+    host=socket.gethostname()
+    IP = socket.gethostbyname(host)
+
+    #service.addPortMapping.get_input_arguments()
+
+    service.AddPortMapping(
+        NewRemoteHost='',
+        NewExternalPort=8080,
+        NewProtocol='TCP',
+        NewInternalPort=8080,
+        NewInternalClient=IP,
+        NewEnabled=1,
+        NewPortMappingDescription='Port Mapping for p2p game client',
+        NewLeaseDuration=0
+    )
 
 if __name__=="__main__":
     a=server()

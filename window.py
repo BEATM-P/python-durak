@@ -1,7 +1,11 @@
 from PyQt5.QtWidgets import QGraphicsScene, QLabel, QGraphicsView, QMainWindow, QApplication,QVBoxLayout, QGraphicsItem, QPushButton, QWidget, QHBoxLayout, QLineEdit, QGraphicsSceneDragDropEvent
 from PyQt5.QtGui import QPixmap, QColor
-from PyQt5.Qt import Qt
+from PyQt5 import QtCore
 import os
+from GlobalObject import GlobalObject
+
+from client import *
+
 
 class card(QPixmap):
     def __init__(self, str, x, y):
@@ -9,27 +13,33 @@ class card(QPixmap):
         path=os.path.dirname(os.path.abspath(__file__))
         print(path +'/data/H6.jpg')
         self.load(path +'/data/H6.jpg')
-        self.pos=x, y
+        self.pos=(x, y)         # not working for some reason
 
 
 class opponent(QWidget):
     def __init__(self, str, num):
-        layout=QHBoxLayout()
+        super().__init__()
+        layout=QVBoxLayout()
         layout.addWidget(QLabel(str))
-        layout.addWidget(QLabel("cards: "+ str(num)))
+        layout.addWidget(QLabel(f"cards: {num}"))
         self.setLayout(layout)
         #scaledToWidth(100)
 
 class window(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
-        self.setupdata=[]
+        self.players=[]
+        self.cards=[]
+
+        self.client=client()
+
+
         self.setWindowTitle("python-durak")
 
         Serverbutton=QPushButton("Server")
         Serverbutton.clicked.connect(self.server_setup)
         Clientbutton=QPushButton("Client")
-        Clientbutton.clicked.connect(self.client_setup)
+        Clientbutton.clicked.connect(asyncio.run(self.client_setup()))
 
         self.layout = QVBoxLayout()
         self.layout.addWidget(Serverbutton)
@@ -39,23 +49,20 @@ class window(QMainWindow):
         container.setLayout(self.layout)
         self.setCentralWidget(container)
 
-    
     def server_setup(self):
         import server
         pass
 
-    def client_setup(self):
+    async def client_setup(self):
         self.Name=QLineEdit()
         self.Name.setPlaceholderText("Enter Name")
-        name=""
         self.Name.textEdited.connect(self.name_input)
         self.Server=QLineEdit()
         self.Server.setPlaceholderText("Enter Server IP")
         self.Server.textEdited.connect(self.server_input)
 
         button=QPushButton("Continue")
-        button.clicked.connect(self.startClient)
-
+        button.clicked.connect(await self.getValues())
 
 
         layout=QVBoxLayout()
@@ -67,26 +74,41 @@ class window(QMainWindow):
         cont.setLayout(layout)
         self.setCentralWidget(cont)
 
+
     def server_input(self,s):
-        self.server=s
+        self.client.server=s
 
     def name_input(self, s):
-        self.name=s
+        self.client.name=s
+
+    async def getValues(self):
+        l=QLabel("      Waiting...")
+        self.setCentralWidget(l)
+        await self.client.setup()
+        await self.client.sio.emit('sta')
+        self.startClient()        
 
     def startClient(self):
-        print("Name "+self.name)
+        print("Name12 "+self.name)
         print("Server "+self.server)
         self.scene = QGraphicsScene(0,0,800,600)
-        self.view=QGraphicsView(scene)
-        self.deckPoint=(100,400)
+        self.view=QGraphicsView(self.scene)
+        self.deckPoint=(100,500)
         self.playerPoint=100,50
-
-    def init_game_state(self,game_state):
-        
-        deck=["H6", "H7", "H8", "H9"]
-        self.playercards.addWidget(card("H6"))
-        self.playercards.addWidget(card("H6"))
-        self.playercards.addWidget(card("H6"))
+        self.view.setBackgroundBrush((QColor(0,128,0)))
+        self.resize(1024,720)
+        self.setCentralWidget(self.view)
+        while True:
+            pass
+    
+    def init_game_state(self,game_state, cards):
+        for i in cards:
+            c=self.scene.addPixmap(card(i, self.deckPoint[0], self.deckPoint[1]).scaledToWidth(100))
+            c.setPos(self.deckPoint[0], self.deckPoint[1])
+            self.deckPoint=(self.deckPoint[0]+50, self.deckPoint[1])
+            c.setFlag(QGraphicsItem.ItemIsMovable)
+            print("debug")
+    
 
         
            
@@ -103,26 +125,35 @@ class window(QMainWindow):
             # remove it from the gui
             widgetToRemove.setParent(None)        
         for i in list:
-            self.playercards.addWidget(card(i))
+            self.playercards.addWidget(card(i).scaledToWidth(100))
 
 
 
 
 app=QApplication([])
 
-scene = QGraphicsScene(0,0,800,600)
+win=window()
 
-view=QGraphicsView(scene)
+win.show()
 
-card=card('H6', 100, 450).scaledToWidth(100)
-c=scene.addPixmap(card)
-c.setPos(100,450)
-c.setFlag(QGraphicsItem.ItemIsMovable)
+asyncio.run(app.exec())
 
-view.setBackgroundBrush((QColor(0,128,0)))
 
-view.show()
-app.exec()
+#l=card('H6', 100, 450).scaledToWidth(100)
+#c=scene.addPixmap(l)
+#c.setPos(100,450)
+#c.setFlag(QGraphicsItem.ItemIsMovable)
+
+#opp=opponent('test', 5)
+#o=scene.addWidget(opp)
+#o.setPos(25,25)
+
+
+
+#view.setBackgroundBrush((QColor(0,128,0)))#
+
+#view.show()
+#app.exec()
 
 
 
