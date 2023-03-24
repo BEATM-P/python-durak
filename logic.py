@@ -127,3 +127,18 @@ class table():
 
     def isEmpty(self):
         return self.active==[]and self.passive==[]
+
+
+class game_state():
+    def __init__(self, game):
+        self.game=game
+
+    def get(self):
+        players={}
+        for i, p in enumerate(self.game.players):
+            if i == self.game.playernum:
+                players[p.name]=(len(p.cards),p.sid, 'def')
+            elif i==self.game.playernum-1 or i==self.game.playernum+1:
+                players[p.name]=(len(p.cards),p.sid, 'att')
+            else:
+                players[p.name]=(len(p.cards),p.sid, 'pas')

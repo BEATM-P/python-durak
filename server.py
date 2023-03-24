@@ -2,47 +2,65 @@ import socketio
 from aiohttp import web
 import socket
 import upnpy
+import sys
 
 
 from logic import game
 from remote import remote
 
 class server():
-    def __init__(self, n_player=None):
-        if n_player==None:                      #script is being executed in terminal; else script is run from test
-            n_player=int(input("how many players?"))
+    def __init__(self,args, min_player=None):
+
+        if min_player==None:
+            self.min_player=2
+
 
         self.session=game()
         self.votes= set()
 
         self.sio = socketio.AsyncServer(logger=True, engineio_logger=True, async_mode='aiohttp')
-        portforwarding()
         app=web.Application()
 #        self.sio.listen('', 5005)
-        self.print_con_info()
-        
+
+        if len(args)>1 and args[1]=='-l':
+            self.print_con_info()
+            #portforwarding()
+
         
 
         @self.sio.event
-        def connect(sid, environ):
+        async def connect(sid, environ):
             print(sid)
             self.sio.enter_room(sid, 'all')
             self.session.players.append(remote(self.sio,sid))
-            self.sio.emit("message", f'Connection from {sid}', 'all',skip_sid=sid)
+            await self.sio.emit("message", f'[Console]: Connection from {sid}', 'all',skip_sid=sid)
+
+        @self.sio.event
+        async def disconnect(sid):
+            print(sid)
+            self.sio.leave_room(sid, 'all')
+            p=self.findPlayerBySid(sid)
+            self.session.players.remove(p)
+            await self.sio.emit("message", f"[Console]: {p.name} has disconnected", 'all')
+
+        @self.sio.event
+        async def message(sid, txt):
+            p=self.findPlayerBySid(sid)
+            await self.sio.emit('message', f'{p.name}: {txt}')
 
         @self.sio.event
         async def sta(sid):
             print("ready:", sid)
             self.votes.add(sid)
-            if len(self.votes)>=n_player:
-                await self.sio.emit('message',"Game starting", 'all')
+            if len(self.votes)>=len(self.session.players) and len(self.session.players)>=self.min_player:       #start the game
+                await self.sio.emit('game_start',self.getAllPlayernames(), 'all')
                 await self.session.setup()
                 await self.sio.emit('trump', self.session.table.trump, 'all')
                 await self.session.game()
                 
                 
             else:
-                await self.sio.emit('message', ('Players ready: '+str(len(self.votes))), 'all')
+                await self.sio.emit('message', f'Players ready: {len(self.votes)}/{len(self.session.players)}', 'all')
 
         @self.sio.event
         def name(sid, name):
@@ -76,12 +94,22 @@ class server():
 
 # Example output of the get_input_arguments method for the "AddPortMapping" action
 
+    def findPlayerBySid(self, sid):
+        for i in self.session.players:
+            if i.sid==sid:
+                return i
+
     def print_con_info(self):
         host=socket.gethostname()
         IP = socket.gethostbyname(host)
         print("info:  ")
         print(host, IP)               # TODO: print out host ip and port so other client players can specify server to connect to
 
+    def getAllPlayernames(self):
+        res=[]
+        for i in self.session.players:
+            res.append(i.name)
+        return res
 
         #print(host)
         #self.self.sio.bind((host,5003))
@@ -118,4 +146,4 @@ def portforwarding():
     )
 
 if __name__=="__main__":
-    a=server()
+    a=server(sys.argv)
