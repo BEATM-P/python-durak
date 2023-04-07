@@ -11,40 +11,41 @@ class remote(player):
         self.name="player"
         self.cards=[]
         self.data=None
+        self.stoppedDefense=False
+        self.stoppedSchub=0
+        self.stoppedAttack=False             #0: still Deciding; 1: no Schiebing; 2: Schiebt
 
     def get_data(self, data):
         self.data=data
 
 
+
+
     async def take(self,card):
         self.cards+=card
-        await self.sio.call('take', card, self.sid)
-        await self.sio.emit('changed_game_state', None, 'all')
+        await self.sio.emit('take', card, self.sid)
+        #await self.sio.emit('changed_game_state', None, 'all')
+
+
+    async def attack(self,numbers):
+        await self.sio.emit('attack',numbers, self.sid)
+
+        #await self.sio.emit('changed_game_state', None, 'all')
         
 
-    async def attack(self,table):
-        x=await self.sio.call('attack', table, self.sid)
-        await self.sio.emit('changed_game_state', None, 'all')
-        for i in x:
-            try:
-                self.cards.remove(i)
-            except:
-                raise Exception("player "+ player.name+" is cheater scum")
-        return x
-                
-
     async def defend(self, table):
-        x=await self.sio.call('defend', table, self.sid)
-        await self.sio.emit('changed_game_state', None, 'all')
-        return x
+        self.stoppedDefense=False
+        await self.sio.emit('defend',None, self.sid)
+        #await self.sio.emit('changed_game_state', None, 'all')
+
 
     async def schiebt(self,table):
-        x=await self.sio.call('schiebt', table, self.sid)
-        await self.sio.emit('changed_game_state',None,'all')
-        return x
+        await self.sio.emit('schiebt',table, self.sid)
+        #await self.sio.emit('changed_game_state',None,'all')
+    
 
     async def finished(self):
-        await self.sio.call('finished', None, self.sid)
-        await self.sio.emit('changed_game_state',None,'all')
-
+        x=await self.sio.call('finished', None, self.sid)
+        #await self.sio.emit('changed_game_state',None,'all')
+        return x
 

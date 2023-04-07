@@ -18,7 +18,7 @@ class server():
         self.session=game()
         self.votes= set()
 
-        self.sio = socketio.AsyncServer(logger=True, engineio_logger=True, async_mode='aiohttp')
+        self.sio = socketio.AsyncServer(logger=True, engineio_logger=True, async_mode='aiohttp', ping_timeout=60)
         app=web.Application()
 #        self.sio.listen('', 5005)
 
@@ -73,6 +73,46 @@ class server():
                 if i.sid==sid:
                     i.name=name
 
+
+        @self.sio.event
+        async def attacking(sid, cards):
+            print(f"{sid} is attacking with {str(cards)}")
+            if len(cards)<self.session.table.allowedCardNumber and self.session.validNumbers(cards):
+                self.session.table.add_active(cards)
+                #await self.sio.emit('changed_game_state',self.session.gameData.get(),'all', skip_sid=sid)
+                return True
+            return False
+
+        @self.sio.event
+        async def stop_attack(sid):
+            self.findPlayerBySid(sid).stopAttack=True
+
+        @self.sio.event
+        async def defending(sid, cards):
+            if self.session.validDefense(cards):
+                self.session.table.remove_active(cards)
+                await self.sio.emit('changed_game_state',self.session.gameData.get(), 'all', skip_sid=sid)
+                return True
+            return False
+
+        @self.sio.event
+        async def stop_defense(sid):
+            self.findPlayerBySid(sid).stoppedDefense=True
+
+        @self.sio.event
+        async def schieben(sid, cards):
+
+            if cards==[]:
+                self.findPlayerBySid(sid).stoppedSchub=1
+                print(f"{sid} is not schiebing")
+                return True
+            if len(cards)<self.session.table.allowedCardNumber and self.session.validNumbers(cards):
+                print(f"{sid} is schiebing with {str(cards)}")
+                self.session.table.add_active(cards)
+                #await self.sio.emit('changed_game_state',self.session.gameData.get(),'all', skip_sid=sid)
+                self.findPlayerBySid(sid).stoppedSchub=2
+                return True
+            return False
 
         self.sio.attach(app)
         web.run_app(app)    
