@@ -149,6 +149,7 @@ class card(QGraphicsPixmapItem):
 
 
     def mouseReleaseEvent(self, event: QGraphicsSceneMouseEvent) -> None:
+        print(self.DragMode=='def', self.window.IsValidDefense(self.window.scene.itemAt(event.lastScenePos(), QTransform()), self.card))
         if self.DragMode=='def' and self.window.IsValidDefense(self.window.scene.itemAt(event.lastScenePos(), QTransform()), self.card)==True:
             print("debug")
 
