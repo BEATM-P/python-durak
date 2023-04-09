@@ -143,33 +143,14 @@ class card(QGraphicsPixmapItem):
                 #if type(i)==QGraphicsRectItem:
             self.window.attackIndicator.setVisible(True)
         elif self.DragMode=='def':
-            for i in self.window.fakecards:
+            for i in self.window.table.cardrow2:
                 i.setVisible(True)
         QGraphicsPixmapItem.mousePressEvent(self, event)
 
 
     def mouseReleaseEvent(self, event: QGraphicsSceneMouseEvent) -> None:
         print(self.DragMode=='def', self.window.IsValidDefense(self.window.scene.itemAt(event.lastScenePos(), QTransform()), self.card))
-        if self.DragMode=='def' and self.window.IsValidDefense(self.window.scene.itemAt(event.lastScenePos(), QTransform()), self.card)==True:
-            print("debug")
-
-            self.DragMode=='off'
-
-            fakecard=self.window.scene.itemAt(event.lastScenePos(), QTransform())
-
-            print("debug2")
-            self.window.cardAcc.append(fakecard.card)
-            self.window.cardAcc.append(self.card)
-
-            print("debug3")
-
-
-            self.window.playercards.remove(self)
-            self.window.table.cardrow2[self.window.table.cardrow2.index(fakecard)]=self
-            self.window.table.refresh()
-
-            self.window.sendButton.click()
-            print(f"defending {fakecard.card} with {self.card}")
+        
         if self.DragMode=='att' and self.window.IsInNumbers(self.card) and event.lastScenePos().y()<400:
             self.DragMode='off'
             self.window.cardAcc.append(self.card)
@@ -185,11 +166,30 @@ class card(QGraphicsPixmapItem):
         else: 
             self.setPos(*self.position)
             print(self.position, self.DragMode)
-        #CLEANUP
-        if self.DragMode=='def':
-            pass
-            # for i in self.window.fakecards:
-            #     i.setVisible(False)
+        if self.DragMode=='def' and self.window.IsValidDefense(self.window.scene.itemAt(event.lastScenePos(), QTransform()), self.card)==True:
+            print("debug")
+
+            self.DragMode=='off'
+
+            fakecard=self.window.scene.itemAt(event.lastScenePos(), QTransform())
+
+            print("debug2")
+            self.window.cardAcc.append(fakecard.card)
+            self.window.cardAcc.append(self.card)
+
+            print("debug3")
+
+
+            self.window.playercards.remove(self)
+            self.window.table.cardrow2[self.window.table.cardrow2.index(fakecard)]=card(self.card, self.window)
+            self.window.table.refresh()
+
+            #self.window.sendButton.click()
+            print(f"defending {fakecard.card} with {self.card}")
+            for i in self.window.table.cardrow2:
+                if type(i)==QGraphicsRectItem:
+                    i.setVisible(False)            #CLEANUP
+
         elif self.DragMode=='att':
             self.window.attackIndicator.setVisible(False)
         #DEBUG INFO
@@ -261,7 +261,6 @@ class table():
                 f=card.fakecard(item.card)
                 self.cardrow2.insert(i, f)
                 self.window.scene.addItem(f)
-                self.window.fakecards.append(f)
                 self.refresh()
                 return
         self.window.scene.addItem(item)
@@ -269,7 +268,6 @@ class table():
         f=card.fakecard(item.card)
         self.cardrow2.append(f)
         self.window.scene.addItem(f)
-        self.window.fakecards.append(f)
         self.refresh()
         
     def removeByStr(self, item:str):
@@ -357,7 +355,6 @@ class window(QMainWindow):
         self.numbers=[]
         self.table=table(100,200, self)
         self.stack=stack()
-        self.fakecards=[]
 
 
     async def setup(self):
