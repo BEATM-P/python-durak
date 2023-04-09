@@ -111,9 +111,9 @@ class card(QGraphicsPixmapItem):
         self.card=str
         label=QLabel()
         path=os.path.dirname(os.path.abspath(__file__))
-        print(path +'/data/H6.jpg')
+        print(f"{path}/data/{self.card}.jpg")
         pixmap=QPixmap()
-        pixmap.load(path +'/data/H6.jpg')
+        pixmap.load(f"{path}/data/{self.card}.png")
         super().__init__(pixmap.scaledToWidth(100))        
         self.setFlag(QGraphicsItem.ItemIsMovable, True)
     
