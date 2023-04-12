@@ -2,6 +2,7 @@ import random
 from remote import remote
 import time
 import asyncio
+from PyQt5.QtWidgets import QGraphicsRectItem
 
 cards=[ 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'H7', 'H8', 'H9',
         'S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9',
@@ -27,6 +28,7 @@ class gameState():
         result["players"]=players
         result["table"]=table
         result["numbers"]=list(self.game.table.numbers)
+        result["stack"]=len(self.game.table.deck),self.game.table.trump
         return result
 
 class game():
@@ -106,7 +108,7 @@ class game():
         else:
             await defe.take(self.table.active+self.table.passive)
             self.table.reset()
-            defe.sio.emit('reset_table', None, all)
+            await defe.sio.emit('reset_table', None, all)
             return 2 
 
     def validNumbers(self,cards):
@@ -134,12 +136,12 @@ class game():
         if len(cards) % 2 !=0:
             #raise Exception('Invalid Defense')
             return False
-        for i in range(len(cards)/2):
+        for i in range(len(cards)//2):
             a=cards[i*2]
             b=cards[i*2+1]
             if a[0]==b[0] and a[1]<b[1]:
                 pass
-            elif a[0]!=b[0] and b[0]==self.trump[0]:
+            elif a[0]!=b[0] and b[0]==self.table.trump[0]:
                 pass
             else:
                 return False
@@ -171,7 +173,7 @@ class table():
 
     def remove_active(self, cards):          #req: defending player returns two lists, the cards at each index of the two lists are the tuples of card and trumping card
         self.passive+=cards
-        for i in range(len(cards)/2):
+        for i in range(len(cards)//2):
             self.active.remove(cards[i*2])
         
 
@@ -192,6 +194,30 @@ class table():
 
 
 
+#UNUSED
+class checks():
+    def __init__(self, settings) -> None:
+        pass
 
+    def IsValidDefense(self, item, c)-> bool:       # from window.py
+        if type(item)!=QGraphicsRectItem:
+            print(f"item type:  {type(item)}")
+            return False
+        else:
+            print(f"item card: {item.card}, played card: {c}")
+            b=item.card
+            if b[0]==c[0] and b[1]<c[1]:
+                return True
+            elif  b[0]!=c[0] and c[0]==self.player.trump[0]:
+                return True
+            return False
 
-
+    def IsInNumbers(self, str):         # from window.py
+        if len(str)!=2:
+            raise Exception(f'card corrupted, {str}')
+        else:
+            if self.numbers==[]:            #! fucks up the if check in card.mouseReleaseEvent
+                return True
+            for i in self.numbers:
+                if i[1]==str[1]:
+                    return True

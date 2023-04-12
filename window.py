@@ -8,6 +8,10 @@ import asyncio
 import os
 from player import player
 
+settings={"deck":9, "trump":1}
+
+
+
 class local(player):
     
     def __init__(self, name, window):
@@ -55,32 +59,30 @@ class local(player):
         #window.display(table)
         #return table[0][1]==window.getCard(self.name,self.cards)
         self.window.table.display(table)
-        self.state='att'
-        self.window.cardAcc=[]
-        self.window.sendButton.setText("Schieben")
-        self.window.sendButton.clicked.connect((self.sendSchub))
-        for i in self.window.playercards.cards:
-            i.DragMode='att'
+        self.state='sch'
         print("Schub")
-    
-    def sendSchub(self):
-        asyncio.ensure_future(self.goSchub())
+        self.defend()
         
     
-    async def goSchub(self):
-        a= await self.window.sio.call("schieben", self.window.cardAcc)
-        a=self.window.cardAcc.copy()
+    def sendSchub(self):
+        Acc=self.window.cardAcc.copy()
         self.window.cardAcc=[]
-        if not a:
-            for i in a:
+        asyncio.ensure_future(self.goSchub(Acc))
+        
+    
+    async def goSchub(self, Acc):
+        a= await self.window.sio.call("schieben", Acc)
+        if not a:   
+            for i in Acc:
                 self.window.table.removeByStr(i)
                 self.window.playercards.insert(card(i, self.window))
             
 
     def defend(self):
-        self.window.concedeButton.clicked.connect(self.stopDefense)
-        self.state='def'
+        if self.state!='sch':
+            self.state='def'
         self.window.cardAcc=[]
+        self.window.concedeButton.clicked.connect(self.stopDefense)
         self.window.sendButton.setText("Defend")
         self.window.sendButton.clicked.connect(self.sendDefense)
         for i in self.window.playercards.cards:
@@ -94,8 +96,9 @@ class local(player):
         asyncio.ensure_future(self.goDefense())
 
     async def goDefense(self):
-        pass;   
-
+        b=await self.window.sio.call("defending", self.window.cardAcc);   
+        if b:
+           self.window.cardAcc=[] 
 
 
 
@@ -104,8 +107,9 @@ def filter1(a,b):
     return a[1]<b[1]
 
 
+
 class card(QGraphicsPixmapItem):
-    def __init__(self, str, window):
+    def __init__(self, str, window, dragMode='off'):
         
         self.window=window
         self.card=str
@@ -116,18 +120,39 @@ class card(QGraphicsPixmapItem):
         pixmap.load(f"{path}/data/{self.card}.png")
         super().__init__(pixmap.scaledToWidth(100))        
         self.setFlag(QGraphicsItem.ItemIsMovable, True)
-    
-        #self.setFlag(QGraphicsItem.ItemIsSelectable, True)
-        #self.position=(x,y)
-        #self.setPos(x,y)
+
         self.setAcceptDrops(False)
-        self.DragMode='off'     #'att': player can drop cards all over the window to attack with them
-                                #'def': player needs to drop card on another card
-                                #'off': cards are not draggable
+        self.DragMode='off'                         
+        #'att': player can drop cards all over the window to attack with them
+        #'def': player needs to drop card on another card
+        #'off': cards are not draggable
+        self.dropIndicator=None                                                 
+    
+   
+
     def setPos(self, x,y):
         super().setPos(x,y)
         self.position=x,y
+        if self.dropIndicator:
+            self.dropIndicator.setPos(x,y+30)
 
+    def setZValue(self, z: float) -> None:
+        if self.dropIndicator:
+            self.dropIndicator.setZValue(z+1)
+        return super().setZValue(z)
+
+    def addDrop(self, item):
+        self.dropIndicator=item
+        self.window.scene.addItem(self.dropIndicator)
+        self.dropIndicator.setPos(self.position[0]+10, self.position[1])    
+
+    
+
+
+    def showDropIndicator(self):
+        if self.dropIndicator==None:
+            pass
+        
     def fakecard(str):
         rect=QGraphicsRectItem(0,0,100,200)
         rect.setAcceptDrops(True)
@@ -137,14 +162,14 @@ class card(QGraphicsPixmapItem):
         return rect
 
     def mousePressEvent(self, event:QGraphicsSceneMouseEvent):
-        if self.DragMode=='att':
+        if self.DragMode=='att' or self.window.player.state=='sch':
             #for i in self.window.table.cardrow2:
                 #print(type(i))
                 #if type(i)==QGraphicsRectItem:
             self.window.attackIndicator.setVisible(True)
-        elif self.DragMode=='def':
-            for i in self.window.table.cardrow2:
-                i.setVisible(True)
+        if self.DragMode=='def':
+            for i in self.window.table.cardrow:
+                i.showDropIndicator()
         QGraphicsPixmapItem.mousePressEvent(self, event)
 
 
@@ -163,40 +188,43 @@ class card(QGraphicsPixmapItem):
             print(f"Attacking with card {self.card}")
 
         
-        else: 
+        else:                   #NEEDS TO BE EXECED BEFORE THE IsValidDefense Check
             self.setPos(*self.position)
             print(self.position, self.DragMode)
-        if self.DragMode=='def' and self.window.IsValidDefense(self.window.scene.itemAt(event.lastScenePos(), QTransform()), self.card)==True:
-            print("debug")
-
+        
+        if self.DragMode=='def' and event.lastScenePos().y()<400 and self.window.IsValidDefense(self.window.scene.itemAt(event.lastScenePos(), QTransform()), self.card)==True:          
+            
             self.DragMode=='off'
-
+            if self.window.player.state=='sch':
+                self.window.cardAcc=[]
+                self.window.player.sendSchub()
+                self.window.player.state='def'
             fakecard=self.window.scene.itemAt(event.lastScenePos(), QTransform())
-
-            print("debug2")
             self.window.cardAcc.append(fakecard.card)
             self.window.cardAcc.append(self.card)
-
-            print("debug3")
-
-
             self.window.playercards.remove(self)
-            self.window.table.cardrow2[self.window.table.cardrow2.index(fakecard)]=card(self.card, self.window)
+            self.window.table.addDefense(fakecard.card, self.card)
             self.window.table.refresh()
-
-            #self.window.sendButton.click()
+            self.window.sendButton.click()
+            print(f"cardacc: {self.window.cardAcc}")
             print(f"defending {fakecard.card} with {self.card}")
-            for i in self.window.table.cardrow2:
-                if type(i)==QGraphicsRectItem:
-                    i.setVisible(False)            #CLEANUP
-
-        elif self.DragMode=='att':
+            
+        elif self.DragMode=='def' and self.window.player.state=='sch' and self.window.IsInNumbers(self.card) and event.lastScenePos().y()<400:
+            self.window.cardAcc.append(self.card)
+            self.window.playercards.remove(self)
+            self.window.table.insert(self)
+            self.window.numbers.append(self.card)
+            self.window.player.sendSchub()
+                               #CLEANUP
+        elif self.DragMode=='att' or self.window.player.state=='sch':
             self.window.attackIndicator.setVisible(False)
+        
+        
         #DEBUG INFO
 
-        print(self.DragMode=='def', self.window.IsValidDefense(self.window.scene.itemAt(event.lastScenePos(), QTransform()), self.card))
-        print(self.window.scene.itemAt(event.lastScenePos(), QTransform()))
-        print(f"Moved {self.card}")
+        # print(self.DragMode=='def', self.window.IsValidDefense(self.window.scene.itemAt(event.lastScenePos(), QTransform()), self.card))
+        # print(self.window.scene.itemAt(event.lastScenePos(), QTransform()))
+        # print(f"Moved {self.card}")
         
         QGraphicsPixmapItem.mouseReleaseEvent(self, event)
     
@@ -244,44 +272,37 @@ class table():
         self.pos=x,y
         self.window=window
         self.active_cards=[]
-        self.cardrow1=[]
-        self.cardrow2=[]
+        self.cardrow=[]
 
     def activeByStr(self):
         res=[]
-        for i in self.cardrow1:
+        for i in self.cardrow:
             res.append(i.card)
         return res
 
     def insert(self, item:card):
-        for i, v in enumerate(self.cardrow1):
+        for i, v in enumerate(self.cardrow):
             if filter1(item.card, v.card):
                 self.window.scene.addItem(item)
-                self.cardrow1.insert(i, item)
-                f=card.fakecard(item.card)
-                self.cardrow2.insert(i, f)
-                self.window.scene.addItem(f)
+                self.cardrow.insert(i, item)
                 self.refresh()
                 return
         self.window.scene.addItem(item)
-        self.cardrow1.append(item)
-        f=card.fakecard(item.card)
-        self.cardrow2.append(f)
-        self.window.scene.addItem(f)
+        self.cardrow.append(item)
         self.refresh()
         
     def removeByStr(self, item:str):
-        for i in self.cardrow1:
+        for i in self.cardrow:
             if i.card==item:
                 self.window.scene.removeItem(i)
-                self.cardrow1.remove(i)
+                self.cardrow.remove(i)
                 return
         
     def display(self, cards):
         acc=False
         for str in cards:
             acc=False
-            for i, c in enumerate(self.cardrow1):
+            for i, c in enumerate(self.cardrow):
                 
                 if c.card ==str:
                     acc=True
@@ -289,21 +310,23 @@ class table():
                 self.insert(card(str, self.window))
         self.refresh()
 
-    def addDefense(self, cards):
-        pass
-
+    def addDefense(self, c1, c2):
+        for i in (self.cardrow):
+            if i.card==c1:
+                i.addDrop(card(c2, self.window, 'off'))
+        self.refresh()
 
     def refresh(self):
-        for i, v in enumerate(self.cardrow1):
-            pos=self.pos[0]+ (600/len(self.cardrow1)*i), self.pos[1]
+        for i, v in enumerate(self.cardrow):
+            pos=self.pos[0]+ (600/len(self.cardrow)*i), self.pos[1]
             v.setPos(*pos)
-            self.cardrow2[i].setPos(pos[0],pos[1]+10)
+            v.setZValue(len(self.cardrow)-i)
 
 
     def clear(self):
-        for v in self.cardrow1:
-            self.window.scene.removeItem(v)
-        for v in self.cardrow2:
+        for v in self.cardrow:
+            if v.dropIndicator:
+                self.window.scene.removeItem(v.dropIndicator)
             self.window.scene.removeItem(v)
 
 class stack(QGraphicsProxyWidget):
@@ -313,14 +336,17 @@ class stack(QGraphicsProxyWidget):
         cont=QWidget()
         layout=QHBoxLayout()
         self.number=QLabel()
-        self.trump=QLabel()
+        self.trump=None
         layout.addWidget(self.trump)
         layout.addWidget(self.number)
         cont.setLayout(layout)
         self.setWidget(cont)
     
-    def setTrump(self, str):        #TODO
-        pass
+    def setTrump(self, str):
+        c=card(str,None)
+        l=QLabel(c.pixmap())
+        self.trump=l
+
 
     def refresh(self,n):
         if n==0:
@@ -400,6 +426,11 @@ class window(QMainWindow):
         def changed_game_state(data):
             print(data)
             self.refresh_game_state(data)
+
+        @self.sio.event
+        def reset_table():
+            self.table.clear()
+
 
         ##PLAYER EVENTS     (just passed onto players)
         @self.sio.event
@@ -611,12 +642,21 @@ class window(QMainWindow):
 
         #refresh table
         self.table.display(game_state["table"][0])
-        self.table.addDefense(game_state["table"][1])
+        for i in range(len(game_state["table"][1])//2):
+            self.table.addDefense(game_state["table"][1][i*2], game_state["table"][1][i*2+1])
         if self.player.state!='att':
             self.numbers=game_state['numbers']
         else:
             self.numbers+=game_state['numbers']
 
+        #refresh stack
+        if not self.stack.trump:
+            self.stack.setTrump(game_state['stack'][1])
+        self.stack.refresh(game_state['stack'][0])
+
+
+
+        #?used idk
     def refresh_player_state(self, list):
         for i in reversed(range(self.playercards.count())): 
             widgetToRemove = self.playercards.itemAt(i).widget()
@@ -663,7 +703,7 @@ class window(QMainWindow):
                     return True
                 
     def IsValidDefense(self, item, c)-> bool:
-        if type(item)!=QGraphicsRectItem:
+        if type(item)!=card:
             print(f"item type:  {type(item)}")
             return False
         else:
