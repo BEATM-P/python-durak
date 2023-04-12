@@ -67,6 +67,7 @@ class game():
                         
             self.playernum % len(self.players)
         
+        self.stop()
 
     async def play(self,defe, att1, att2=None): 
         await defe.sio.emit('changed_game_state', self.gameData.get(), 'all') 
@@ -147,6 +148,8 @@ class game():
                 return False
         return True
 
+
+
 class table():
     def __init__(self):
         self.deck=self.mix()                #stores the stack of unused cards
@@ -170,12 +173,20 @@ class table():
         for i in cards:
             self.active.append(i)
             self.allowedCardNumber-=1
+            self.addToNumbers(i)
+
+    def addToNumbers(self, crd):
+        for i in self.numbers:
+            if i[1]==crd[1]:
+                return
+        self.numbers.add(crd)
+
 
     def remove_active(self, cards):          #req: defending player returns two lists, the cards at each index of the two lists are the tuples of card and trumping card
         self.passive+=cards
         for i in range(len(cards)//2):
             self.active.remove(cards[i*2])
-        
+            self.addToNumbers(cards[i*2+1])
 
     def get_card(self):
         return self.deck.pop()

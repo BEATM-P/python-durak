@@ -37,7 +37,7 @@ class remote(player):
         self.stoppedDefense=False
         await self.sio.emit('defend',None, self.sid)
         #await self.sio.emit('changed_game_state', None, 'all')
-
+        
 
     async def schiebt(self,table):
         await self.sio.emit('schiebt',table, self.sid)

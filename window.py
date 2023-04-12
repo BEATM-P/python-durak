@@ -334,9 +334,9 @@ class stack(QGraphicsProxyWidget):
         super().__init__()
         
         cont=QWidget()
-        layout=QHBoxLayout()
+        layout=QVBoxLayout()
         self.number=QLabel()
-        self.trump=None
+        self.trump=QLabel()
         layout.addWidget(self.trump)
         layout.addWidget(self.number)
         cont.setLayout(layout)
@@ -344,8 +344,8 @@ class stack(QGraphicsProxyWidget):
     
     def setTrump(self, str):
         c=card(str,None)
-        l=QLabel(c.pixmap())
-        self.trump=l
+        print(f"setting trump as {str}")
+        self.trump.setPixmap(c.pixmap().scaledToWidth(75))
 
 
     def refresh(self,n):
@@ -404,6 +404,7 @@ class window(QMainWindow):
         @self.sio.event
         def trump(string):
             self.player.trump=string
+            self.stack.setTrump(string)
             print("Trump: ",string)
             
         @self.sio.event
@@ -480,8 +481,10 @@ class window(QMainWindow):
         self.setCentralWidget(container)
 
     def server_setup(self):
-        import server
-        pass
+        from server import server
+        self.loop.stop()
+        a=server([])
+        
 
     def client_setup(self):
         self.Name=QLineEdit()
@@ -534,7 +537,7 @@ class window(QMainWindow):
             self.view=QGraphicsView(self.scene)
             
             self.scene.addItem(self.stack)
-            self.stack.setPos(750, 300)
+            self.stack.setPos(650, 250)
             
             # deck=QGraphicsWidget(layout=self.playercards)
             # self.scene.addItem(deck)
@@ -650,8 +653,6 @@ class window(QMainWindow):
             self.numbers+=game_state['numbers']
 
         #refresh stack
-        if not self.stack.trump:
-            self.stack.setTrump(game_state['stack'][1])
         self.stack.refresh(game_state['stack'][0])
 
 
