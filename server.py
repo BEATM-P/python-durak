@@ -22,8 +22,8 @@ class server():
         app=web.Application()
 #        self.sio.listen('', 5005)
 
-        if len(args)>1 and args[1]=='-l':
-            self.print_con_info()
+        #if len(args)>1 and args[1]=='-l':
+        self.print_con_info()
             #portforwarding()
 
         
@@ -85,7 +85,7 @@ class server():
 
         @self.sio.event
         async def stop_attack(sid):
-            self.findPlayerBySid(sid).stopAttack=True
+            self.findPlayerBySid(sid).stoppedAttack=True
 
         @self.sio.event
         async def defending(sid, cards):

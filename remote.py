@@ -28,6 +28,7 @@ class remote(player):
 
 
     async def attack(self,numbers):
+        self.stoppedAttack=False
         await self.sio.emit('attack',numbers, self.sid)
 
         #await self.sio.emit('changed_game_state', None, 'all')
