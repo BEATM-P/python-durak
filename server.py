@@ -120,7 +120,7 @@ class server():
                     p.cards.remove(i)
                 print(f"{sid} is schiebing with {str(cards)}")
                 self.session.table.add_active(cards)
-                #await self.sio.emit('changed_game_state',self.session.gameData.get(),'all', skip_sid=sid)
+                #await self.sio.emit('changed_                                                                                                                                                                                                                                                                                                                                                                                                                                       game_state',self.session.gameData.get(),'all', skip_sid=sid)
                 self.findPlayerBySid(sid).stoppedSchub=2
                 return True
             return False
