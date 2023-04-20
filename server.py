@@ -22,8 +22,8 @@ class server():
         app=web.Application()
 #        self.sio.listen('', 5005)
 
-        if len(args)>1 and args[1]=='-l':
-            self.print_con_info()
+        #if len(args)>1 and args[1]=='-l':
+        self.print_con_info()
             #portforwarding()
 
         
@@ -79,17 +79,23 @@ class server():
             print(f"{sid} is attacking with {str(cards)}")
             if len(cards)<self.session.table.allowedCardNumber and self.session.validNumbers(cards):
                 self.session.table.add_active(cards)
-                #await self.sio.emit('changed_game_state',self.session.gameData.get(),'all', skip_sid=sid)
+                p=self.findPlayerBySid(sid)
+                for i in cards:
+                    p.cards.remove(i)
+                #await self.sio.emit('changed_game_state',self.session.gameData.get(),'all', skip_sid=sid)f
                 return True
             return False
 
         @self.sio.event
         async def stop_attack(sid):
-            self.findPlayerBySid(sid).stopAttack=True
+            self.findPlayerBySid(sid).stoppedAttack=True
 
         @self.sio.event
         async def defending(sid, cards):
             if self.session.validDefense(cards):
+                p=self.findPlayerBySid(sid)
+                for i in range(len(cards)//2):
+                    p.cards.remove(cards[i*2+1])
                 self.session.table.remove_active(cards)
                 await self.sio.emit('changed_game_state',self.session.gameData.get(), 'all', skip_sid=sid)
                 return True
@@ -107,6 +113,9 @@ class server():
                 print(f"{sid} is not schiebing")
                 return True
             if len(cards)<self.session.table.allowedCardNumber and self.session.validNumbers(cards):
+                p=self.findPlayerBySid(sid)
+                for i in cards:
+                    p.cards.remove(i)
                 print(f"{sid} is schiebing with {str(cards)}")
                 self.session.table.add_active(cards)
                 #await self.sio.emit('changed_game_state',self.session.gameData.get(),'all', skip_sid=sid)

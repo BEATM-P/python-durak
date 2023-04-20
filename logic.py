@@ -58,15 +58,15 @@ class game():
                 self.playernum+=await self.play(self.players[self.playernum % n],self.players[(self.playernum-1) % n], self.players[self.playernum+1])
             else:
                 self.playernum+=await self.play(self.players[self.playernum % n],self.players[(self.playernum-1) % n])  
-            if self.table.active==[]:              #if table is not empty attack is still going(schiebung)
+            self.playernum=self.playernum % len(self.players)
+            if self.table.isEmpty():              #if table is not empty attack 2321is still going(schiebung)
                 for i in self.players:
                     if self.table.stack_empty() and len(i.cards)==0:
                         i.finished()
                         self.player.remove(i)
                     while (not self.table.stack_empty()) and len(i.cards)<6:
-                        await i.take(self.table.get_card())
+                        await i.take([self.table.get_card()])
                         
-            self.playernum % len(self.players)
         
         self.stop()
 
@@ -82,8 +82,9 @@ class game():
         
         await defe.schiebt((self.table.active))
                                #dont change table, but next player will be attacked
-        while defe.stoppedSchub==0:
-            time.sleep(settings['tick_rate'])
+
+        while defe.stoppedSchub==0 and not defe.stoppedDefense:
+            time.sleep(3)
             print("waiting for schub")
             await defe.sio.emit('changed_game_state', self.gameData.get(), 'all')
         if defe.stoppedSchub==2:
@@ -94,23 +95,25 @@ class game():
         if att2!=None:
             await att2.attack(list(self.table.numbers))   
 
-        if not att2!=None:
+        if att2!=None:
             while (not defe.stoppedDefense) and not (att1.stoppedAttack and att2.stoppedAttack):
                 time.sleep(settings['tick_rate'])
                 await defe.sio.emit('changed_game_state', self.gameData.get(), 'all')
+        
                 #wait (defe.sio.emit('changed_game_state', self.gameData.get(), 'all'))     #!ugly, sio is in every remote player and always the same
-        while (not defe.stoppedDefense) and not (att1.stoppedAttack):
-                time.sleep(settings['tick_rate'])
+        else:
+            while (not defe.stoppedDefense) and not (att1.stoppedAttack):
+                time.sleep(3)
                 await defe.sio.emit('changed_game_state', self.gameData.get(), 'all')
 
         if self.table.active== []:
             self.table.reset()
-            await defe.sio.emit('reset_table', None, all)
+            await defe.sio.emit('reset_table', None, 'all')
             return 1                    #-> p2 has won-> return 0
         else:
             await defe.take(self.table.active+self.table.passive)
             self.table.reset()
-            await defe.sio.emit('reset_table', None, all)
+            await defe.sio.emit('reset_table', None, 'all')
             return 2 
 
     def validNumbers(self,cards):
@@ -132,7 +135,6 @@ class game():
                 return True
         return False
                     
-        return True
 
     def validDefense(self,cards):
         if len(cards) % 2 !=0:
@@ -172,9 +174,10 @@ class table():
 
     def add_active(self, cards):
         for i in cards:
-            self.active.append(i)
-            self.allowedCardNumber-=1
-            self.addToNumbers(i)
+            if i not in self.active:
+                self.active.append(i)
+                self.allowedCardNumber-=1
+                self.addToNumbers(i)
 
     def addToNumbers(self, crd):
         for i in self.numbers:
@@ -202,7 +205,7 @@ class table():
 
 
     def isEmpty(self):
-        return self.active==[]and self.passive==[]
+        return self.active==[] and self.passive==[]
 
 
 

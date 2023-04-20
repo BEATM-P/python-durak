@@ -33,8 +33,9 @@ class local(player):
         ##setup attack
         self.state='att'
         self.window.cardAcc=[]
-        self.window.sendButton.setText('Attack')
-        self.window.sendButton.clicked.connect((self.sendAttack))
+        #self.window.sendButton.setText('Attack')
+        #self.window.sendButton.clicked.connect((self.sendAttack))
+        self.window.concedeButton.clicked.connect(self.stopAttack)
         for i in self.window.playercards.cards:
             i.DragMode='att'
         print("ATTACK")
@@ -57,7 +58,7 @@ class local(player):
     
     def schiebt(self,table):
         #window.display(table)
-        #return table[0][1]==window.getCard(self.name,self.cards)
+        #return table[0][1]==window.getCard(self.name,self.c              ards)
         self.window.table.display(table)
         self.state='sch'
         print("Schub")
@@ -83,13 +84,15 @@ class local(player):
             self.state='def'
         self.window.cardAcc=[]
         self.window.concedeButton.clicked.connect(self.stopDefense)
-        self.window.sendButton.setText("Defend")
-        self.window.sendButton.clicked.connect(self.sendDefense)
+        # self.window.sendButton.setText("Defend")
+        # self.window.sendButton.clicked.connect(self.sendDefense)
         for i in self.window.playercards.cards:
             i.DragMode='def'
         print("Defense")
         
     def stopDefense(self):
+        if self.state=="sch":
+            asyncio.ensure_future(self.goSchub([]))
         asyncio.ensure_future(self.window.sio.emit("stop_defense", None))
 
     def sendDefense(self):
@@ -142,9 +145,10 @@ class card(QGraphicsPixmapItem):
         return super().setZValue(z)
 
     def addDrop(self, item):
-        self.dropIndicator=item
-        self.window.scene.addItem(self.dropIndicator)
-        self.dropIndicator.setPos(self.position[0]+10, self.position[1])    
+        if not self.dropIndicator:
+            self.dropIndicator=item
+            self.window.scene.addItem(self.dropIndicator)
+            self.dropIndicator.setPos(self.position[0]+10, self.position[1])    
 
     
 
@@ -182,8 +186,8 @@ class card(QGraphicsPixmapItem):
             self.window.playercards.remove(self)
             self.window.table.insert(self)
             self.window.numbers.append(self.card)
-            #self.window.player.sendAttack()
-            self.window.sendButton.click()
+            self.window.player.sendAttack()
+            #self.window.sendButton.click()
             print(event.lastScenePos(), self.DragMode)
             print(f"Attacking with card {self.card}")
 
@@ -205,7 +209,8 @@ class card(QGraphicsPixmapItem):
             self.window.playercards.remove(self)
             self.window.table.addDefense(fakecard.card, self.card)
             self.window.table.refresh()
-            self.window.sendButton.click()
+            self.window.player.sendDefense()
+            #self.window.sendButton.click()
             print(f"cardacc: {self.window.cardAcc}")
             print(f"defending {fakecard.card} with {self.card}")
             
@@ -265,6 +270,8 @@ class cardList():
 
     def clear(self):
         for v in self.cards:
+            if v.dropIndicator:
+                self.window.scene.removeItem(v.dropIndicator)
             self.window.scene.removeItem(v)
 
 class table():
@@ -327,7 +334,11 @@ class table():
         for v in self.cardrow:
             if v.dropIndicator:
                 self.window.scene.removeItem(v.dropIndicator)
+                v.dropIndicator=None
             self.window.scene.removeItem(v)
+        self.cardrow=[]
+
+        
 
 class stack(QGraphicsProxyWidget):
     def __init__(self):
@@ -354,7 +365,7 @@ class stack(QGraphicsProxyWidget):
             return
         self.number.setText(f'Cards left: {n}')
 
-
+#TEst ing github
 class opponent(QWidget):
     def __init__(self, str, num, isSelf=False):
         super().__init__()
@@ -372,6 +383,17 @@ class opponent(QWidget):
 
         
         #scaledToWidth(100)
+
+class Lobby(QWidget):
+    def __init__(self) -> None:
+        self.layout=QHBoxLayout()
+        self.layout.addWidget(QLabel("Players:  "))
+        super().__init__()
+
+    def add(self, opp):
+        self.layout.addWidget(QLabel(opp.name))
+
+
 
 class window(QMainWindow):
     def __init__(self) -> None:
@@ -452,6 +474,9 @@ class window(QMainWindow):
             #     else:
             #         for i in self.acc:
             #             self.player.cards.remove(i)
+    
+
+
         @self.sio.event
         def defend():
             self.player.defend()
@@ -573,7 +598,7 @@ class window(QMainWindow):
             #console and buttons
             sublayout=QVBoxLayout()
 
-            self.sendButton=QPushButton("Attack")
+            #self.sendButton=QPushButton("Attack")
             #self.sendButton.GrayedOut()
 
             self.quitButton=QPushButton("Quit")
@@ -590,7 +615,7 @@ class window(QMainWindow):
             self.textIn.returnPressed.connect(self.sendMessage)
 
             sublayout.addWidget(self.quitButton)
-            sublayout.addWidget(self.sendButton)
+            #sublayout.addWidget(self.sendButton)
             sublayout.addWidget(self.concedeButton)
             sublayout.addWidget(self.textOut)
             sublayout.addWidget(self.textIn)
