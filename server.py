@@ -33,6 +33,7 @@ class server():
             print(sid)
             self.sio.enter_room(sid, 'all')
             self.session.players.append(remote(self.sio,sid))
+            await self.sio.emit("connection", ["Connecting", sid])
             await self.sio.emit("message", f'[Console]: Connection from {sid}', 'all',skip_sid=sid)
 
         @self.sio.event
@@ -67,11 +68,12 @@ class server():
             print(sid, name)
 
         @self.sio.event
-        def namechange(sid, name):
+        async def namechange(sid, name):
             print(sid)
             for i in self.session.players:
                 if i.sid==sid:
                     i.name=name
+            await self.sio.emit("namechange", [sid, self.findPlayerBySid(sid).name])
 
 
         @self.sio.event

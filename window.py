@@ -5,10 +5,11 @@ from qasync import QEventLoop
 import socketio
 import asyncio
 
+import sys
 import os
 from player import player
 
-settings={"deck":9, "trump":1}
+settings={"dbg": False,"deck":9, "trump":1}
 
 
 
@@ -384,15 +385,14 @@ class opponent(QWidget):
         
         #scaledToWidth(100)
 
-class Lobby(QWidget):
+class lobby(QWidget):
     def __init__(self) -> None:
         self.layout=QHBoxLayout()
         self.layout.addWidget(QLabel("Players:  "))
         super().__init__()
 
     def add(self, opp):
-        self.layout.addWidget(QLabel(opp.name))
-
+        self.layout.addWidget(QLabel(f"{opp.name}"))
 
 
 class window(QMainWindow):
@@ -403,6 +403,7 @@ class window(QMainWindow):
         self.numbers=[]
         self.table=table(100,200, self)
         self.stack=stack()
+
 
 
     async def setup(self):
@@ -429,6 +430,12 @@ class window(QMainWindow):
             self.stack.setTrump(string)
             print("Trump: ",string)
             
+        def namechange(sid, name):
+            if settings["dbg"]:
+                print(f'namechange {sid} to {name}')
+
+
+
         @self.sio.event
         def game_start(players):
             opps=[]
@@ -489,9 +496,11 @@ class window(QMainWindow):
         def finished():
             self.player.finished
 
-    def welcomer(self):
+    def welcomer(self,argv):
         self.setWindowTitle("python-durak")
-
+        if argv:
+            self.client_setup(argv)
+            return
         Serverbutton=QPushButton("Server")
         Serverbutton.clicked.connect(self.server_setup)
         Clientbutton=QPushButton("Client")
@@ -511,7 +520,12 @@ class window(QMainWindow):
         a=server([])
         
 
-    def client_setup(self):
+    def client_setup(self, argv):
+        if argv:
+            self.name=argv[1]
+            self.server=argv[2]
+            self.getValues()
+            return
         self.Name=QLineEdit()
         self.Name.setPlaceholderText("Enter Name")
         self.Name.textEdited.connect(self.name_input)
@@ -741,7 +755,7 @@ class window(QMainWindow):
                 return True
             return False
 
-    def exec(self):
+    def exec(self, argv):
 
         self.loop = QEventLoop(app)
 
@@ -749,7 +763,7 @@ class window(QMainWindow):
 
         with self.loop:
             asyncio.ensure_future(win.setup())
-            win.welcomer()
+            win.welcomer(argv)
             self.loop.run_forever()
 
 
@@ -757,6 +771,6 @@ if __name__=="__main__":
     app=QApplication([])
     win=window()
     win.show()
-    win.exec()
+    win.exec(sys.argv)
 
     
