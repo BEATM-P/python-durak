@@ -9,6 +9,7 @@ cards=[ 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'H7', 'H8', 'H9',
         'E1', 'E2', 'E3', 'E4', 'E5', 'E6', 'E7', 'E8', 'E9',
         'B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8', 'B9']
 
+settings={'tick_rate':1}
 
 class gameState():
     def __init__(self, game):
@@ -82,7 +83,7 @@ class game():
         await defe.schiebt((self.table.active))
                                #dont change table, but next player will be attacked
         while defe.stoppedSchub==0:
-            time.sleep(3)
+            time.sleep(settings['tick_rate'])
             print("waiting for schub")
             await defe.sio.emit('changed_game_state', self.gameData.get(), 'all')
         if defe.stoppedSchub==2:
@@ -95,11 +96,11 @@ class game():
 
         if not att2!=None:
             while (not defe.stoppedDefense) and not (att1.stoppedAttack and att2.stoppedAttack):
-                time.sleep(3)
+                time.sleep(settings['tick_rate'])
                 await defe.sio.emit('changed_game_state', self.gameData.get(), 'all')
                 #wait (defe.sio.emit('changed_game_state', self.gameData.get(), 'all'))     #!ugly, sio is in every remote player and always the same
         while (not defe.stoppedDefense) and not (att1.stoppedAttack):
-                time.sleep(3)
+                time.sleep(settings['tick_rate'])
                 await defe.sio.emit('changed_game_state', self.gameData.get(), 'all')
 
         if self.table.active== []:
