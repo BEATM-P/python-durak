@@ -77,14 +77,14 @@ class game():
         await att1.attack(list(self.table.numbers))               #return 0 if defending player wins, otherwise 1
         #await defe.sio.emit('changed_game_state', self.gameData.get(), 'all') 
         while self.table.active==[]:
-            time.sleep(3)
+            time.sleep(settings["tick_rate"])
             await defe.sio.emit('changed_game_state', self.gameData.get(), 'all')
         
         await defe.schiebt((self.table.active))
                                #dont change table, but next player will be attacked
 
         while defe.stoppedSchub==0 and not defe.stoppedDefense:
-            time.sleep(3)
+            time.sleep(settings["tick_rate"])
             print("waiting for schub")
             await defe.sio.emit('changed_game_state', self.gameData.get(), 'all')
         if defe.stoppedSchub==2:
@@ -103,7 +103,7 @@ class game():
                 #wait (defe.sio.emit('changed_game_state', self.gameData.get(), 'all'))     #!ugly, sio is in every remote player and always the same
         else:
             while (not defe.stoppedDefense) and not (att1.stoppedAttack):
-                time.sleep(3)
+                time.sleep(settings["tick_rate"])
                 await defe.sio.emit('changed_game_state', self.gameData.get(), 'all')
 
         if self.table.active== []:
