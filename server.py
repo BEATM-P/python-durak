@@ -79,7 +79,10 @@ class server():
             print(f"{sid} is attacking with {str(cards)}")
             if len(cards)<self.session.table.allowedCardNumber and self.session.validNumbers(cards):
                 self.session.table.add_active(cards)
-                #await self.sio.emit('changed_game_state',self.session.gameData.get(),'all', skip_sid=sid)
+                p=self.findPlayerBySid(sid)
+                for i in cards:
+                    p.cards.remove(i)
+                #await self.sio.emit('changed_game_state',self.session.gameData.get(),'all', skip_sid=sid)f
                 return True
             return False
 
@@ -90,6 +93,9 @@ class server():
         @self.sio.event
         async def defending(sid, cards):
             if self.session.validDefense(cards):
+                p=self.findPlayerBySid(sid)
+                for i in range(len(cards)//2):
+                    p.cards.remove(cards[i*2+1])
                 self.session.table.remove_active(cards)
                 await self.sio.emit('changed_game_state',self.session.gameData.get(), 'all', skip_sid=sid)
                 return True
@@ -107,6 +113,9 @@ class server():
                 print(f"{sid} is not schiebing")
                 return True
             if len(cards)<self.session.table.allowedCardNumber and self.session.validNumbers(cards):
+                p=self.findPlayerBySid(sid)
+                for i in cards:
+                    p.cards.remove(i)
                 print(f"{sid} is schiebing with {str(cards)}")
                 self.session.table.add_active(cards)
                 #await self.sio.emit('changed_game_state',self.session.gameData.get(),'all', skip_sid=sid)

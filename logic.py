@@ -93,7 +93,7 @@ class game():
         if att2!=None:
             await att2.attack(list(self.table.numbers))   
 
-        if not att2!=None:
+        if att2!=None:
             while (not defe.stoppedDefense) and not (att1.stoppedAttack and att2.stoppedAttack):
                 time.sleep(3)
                 await defe.sio.emit('changed_game_state', self.gameData.get(), 'all')

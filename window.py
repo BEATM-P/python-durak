@@ -336,6 +336,9 @@ class table():
                 self.window.scene.removeItem(v.dropIndicator)
                 v.dropIndicator=None
             self.window.scene.removeItem(v)
+        self.cardrow=[]
+
+        
 
 class stack(QGraphicsProxyWidget):
     def __init__(self):
