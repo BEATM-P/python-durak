@@ -648,7 +648,7 @@ class window(QMainWindow):
 
             self.setCentralWidget(self.widget)
 
-            self.player=local(self.Name, self)
+            self.player=local(self.name, self)
 
     #DEPRECIATED
     def init_game_state(self,game_state, cards):
