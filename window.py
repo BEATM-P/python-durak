@@ -9,7 +9,7 @@ import sys
 import os
 from player import player
 
-settings={"dbg": False,"deck":9, "trump":1}
+settings={"dbg": True,"deck":9, "trump":1}
 
 
 
@@ -60,6 +60,7 @@ class local(player):
     def schiebt(self,table):
         #window.display(table)
         #return table[0][1]==window.getCard(self.name,self.c              ards)
+        self.window.cardAcc=[]
         self.window.table.display(table)
         self.state='sch'
         print("Schub")
@@ -69,7 +70,9 @@ class local(player):
     def sendSchub(self):
         Acc=self.window.cardAcc.copy()
         self.window.cardAcc=[]
-        asyncio.ensure_future(self.goSchub(Acc))
+        if settings['dbg']:
+            print(f'Emmiting Schieben with {Acc}')
+        asyncio.ensure_future(self.goSchub(Acc))        #!! BROKEN
         
     
     async def goSchub(self, Acc):
@@ -83,6 +86,8 @@ class local(player):
     def defend(self):
         if self.state!='sch':
             self.state='def'
+        if settings['dbg']:
+            print(f'self.state {self.state}')
         self.window.cardAcc=[]
         self.window.concedeButton.clicked.connect(self.stopDefense)
         # self.window.sendButton.setText("Defend")
@@ -200,6 +205,8 @@ class card(QGraphicsPixmapItem):
         if self.DragMode=='def' and event.lastScenePos().y()<400 and self.window.IsValidDefense(self.window.scene.itemAt(event.lastScenePos(), QTransform()), self.card)==True:          
             
             self.DragMode=='off'
+            if settings["dbg"]:
+                print(f'player.state {self.window.player.state}')
             if self.window.player.state=='sch':
                 self.window.cardAcc=[]
                 self.window.player.sendSchub()
@@ -222,7 +229,7 @@ class card(QGraphicsPixmapItem):
             self.window.numbers.append(self.card)
             self.window.player.sendSchub()
                                #CLEANUP
-        elif self.DragMode=='att' or self.window.player.state=='sch':
+        if self.DragMode=='att' or self.window.player.state=='sch':
             self.window.attackIndicator.setVisible(False)
         
         
@@ -338,6 +345,7 @@ class table():
                 v.dropIndicator=None
             self.window.scene.removeItem(v)
         self.cardrow=[]
+        self.window.player.state='off'
 
         
 
@@ -671,12 +679,12 @@ class window(QMainWindow):
                 i.widget().cards.setText('0')
                 break
             if game_state["players"][i.widget().name][2]=='att':
-                if i.widget().name==self.player.name:
-                    self.player.state='att'
+                # if i.widget().name==self.player.name:
+                #     self.player.state='att'
                 i.widget().setStyleSheet("background-color:blue")          #TODO Make the colors global variables so custom themes can exist
             elif game_state["players"][i.widget().name][2]=='def':
-                if i.widget().name==self.player.name:
-                    self.player.state='def'
+                # if i.widget().name==self.player.name:
+                #     self.player.state='def'
                 i.widget().setStyleSheet("background-color:red")
             else:
                 i.widget().setStyleSheet("background-color:grey")
@@ -763,7 +771,10 @@ class window(QMainWindow):
 
         with self.loop:
             asyncio.ensure_future(win.setup())
-            win.welcomer(argv)
+            if len(argv)>1:
+                win.welcomer(argv)
+            else:
+                win.welcomer([])
             self.loop.run_forever()
 
 

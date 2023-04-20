@@ -18,7 +18,7 @@ class server():
         self.session=game()
         self.votes= set()
 
-        self.sio = socketio.AsyncServer(logger=True, engineio_logger=True, async_mode='aiohttp', ping_timeout=60)
+        self.sio = socketio.AsyncServer(logger=True, engineio_logger=False, async_mode='aiohttp', ping_timeout=60)
         app=web.Application()
 #        self.sio.listen('', 5005)
 

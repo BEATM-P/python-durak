@@ -90,7 +90,7 @@ class game():
         if defe.stoppedSchub==2:
             return 1
 
-        await defe.defend(self.table.active)
+        #await defe.defend(self.table.active)
 
         if att2!=None:
             await att2.attack(list(self.table.numbers))   

@@ -33,7 +33,7 @@ class remote(player):
 
         #await self.sio.emit('changed_game_state', None, 'all')
         
-
+    #DEPRECIATED
     async def defend(self, table):
         self.stoppedDefense=False
         await self.sio.emit('defend',None, self.sid)
@@ -42,6 +42,7 @@ class remote(player):
 
     async def schiebt(self,table):
         self.stoppedSchub=0
+        self.stoppedDefense=False
         await self.sio.emit('schiebt',table, self.sid)
         #await self.sio.emit('changed_game_state',None,'all')
     
