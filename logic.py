@@ -64,7 +64,7 @@ class game():
                         i.finished()
                         self.player.remove(i)
                     while (not self.table.stack_empty()) and len(i.cards)<6:
-                        await i.take(self.table.get_card())
+                        await i.take([self.table.get_card()])
                         
         
         self.stop()
@@ -81,7 +81,7 @@ class game():
         
         await defe.schiebt((self.table.active))
                                #dont change table, but next player will be attacked
-        while defe.stoppedSchub==0:
+        while defe.stoppedSchub==0 and not defe.stoppedDefense:
             time.sleep(3)
             print("waiting for schub")
             await defe.sio.emit('changed_game_state', self.gameData.get(), 'all')
@@ -203,7 +203,7 @@ class table():
 
 
     def isEmpty(self):
-        return self.active==[]and self.passive==[]
+        return self.active==[] and self.passive==[]
 
 
 

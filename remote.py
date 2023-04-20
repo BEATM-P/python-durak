@@ -21,7 +21,7 @@ class remote(player):
 
 
 
-    async def take(self,card):
+    async def take(self,card:list):
         self.cards+=card
         await self.sio.emit('take', card, self.sid)
         #await self.sio.emit('changed_game_state', None, 'all')
@@ -41,6 +41,7 @@ class remote(player):
         
 
     async def schiebt(self,table):
+        self.stoppedSchub=0
         await self.sio.emit('schiebt',table, self.sid)
         #await self.sio.emit('changed_game_state',None,'all')
     

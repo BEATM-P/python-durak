@@ -33,8 +33,8 @@ class local(player):
         ##setup attack
         self.state='att'
         self.window.cardAcc=[]
-        self.window.sendButton.setText('Attack')
-        self.window.sendButton.clicked.connect((self.sendAttack))
+        #self.window.sendButton.setText('Attack')
+        #self.window.sendButton.clicked.connect((self.sendAttack))
         self.window.concedeButton.clicked.connect(self.stopAttack)
         for i in self.window.playercards.cards:
             i.DragMode='att'
@@ -84,13 +84,15 @@ class local(player):
             self.state='def'
         self.window.cardAcc=[]
         self.window.concedeButton.clicked.connect(self.stopDefense)
-        self.window.sendButton.setText("Defend")
-        self.window.sendButton.clicked.connect(self.sendDefense)
+        # self.window.sendButton.setText("Defend")
+        # self.window.sendButton.clicked.connect(self.sendDefense)
         for i in self.window.playercards.cards:
             i.DragMode='def'
         print("Defense")
         
     def stopDefense(self):
+        if self.state=="sch":
+            asyncio.ensure_future(self.goSchub([]))
         asyncio.ensure_future(self.window.sio.emit("stop_defense", None))
 
     def sendDefense(self):
@@ -184,8 +186,8 @@ class card(QGraphicsPixmapItem):
             self.window.playercards.remove(self)
             self.window.table.insert(self)
             self.window.numbers.append(self.card)
-            #self.window.player.sendAttack()
-            self.window.sendButton.click()
+            self.window.player.sendAttack()
+            #self.window.sendButton.click()
             print(event.lastScenePos(), self.DragMode)
             print(f"Attacking with card {self.card}")
 
@@ -207,7 +209,8 @@ class card(QGraphicsPixmapItem):
             self.window.playercards.remove(self)
             self.window.table.addDefense(fakecard.card, self.card)
             self.window.table.refresh()
-            self.window.sendButton.click()
+            self.window.player.sendDefense()
+            #self.window.sendButton.click()
             print(f"cardacc: {self.window.cardAcc}")
             print(f"defending {fakecard.card} with {self.card}")
             
@@ -592,7 +595,7 @@ class window(QMainWindow):
             #console and buttons
             sublayout=QVBoxLayout()
 
-            self.sendButton=QPushButton("Attack")
+            #self.sendButton=QPushButton("Attack")
             #self.sendButton.GrayedOut()
 
             self.quitButton=QPushButton("Quit")
@@ -609,7 +612,7 @@ class window(QMainWindow):
             self.textIn.returnPressed.connect(self.sendMessage)
 
             sublayout.addWidget(self.quitButton)
-            sublayout.addWidget(self.sendButton)
+            #sublayout.addWidget(self.sendButton)
             sublayout.addWidget(self.concedeButton)
             sublayout.addWidget(self.textOut)
             sublayout.addWidget(self.textIn)
