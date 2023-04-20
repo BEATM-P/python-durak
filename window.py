@@ -365,7 +365,7 @@ class stack(QGraphicsProxyWidget):
             return
         self.number.setText(f'Cards left: {n}')
 
-
+#TEst ing github
 class opponent(QWidget):
     def __init__(self, str, num, isSelf=False):
         super().__init__()
