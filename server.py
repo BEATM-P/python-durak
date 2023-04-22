@@ -33,7 +33,10 @@ class server():
             print(sid)
             self.sio.enter_room(sid, 'all')
             self.session.players.append(remote(self.sio,sid))
-            await self.sio.emit("connection", ["Connecting", sid])
+            data=[]
+            for i in self.session.players:
+                data.append((i.sid, i.name))
+            await self.sio.emit("connection",data, room=sid)
             await self.sio.emit("message", f'[Console]: Connection from {sid}', 'all',skip_sid=sid)
 
         @self.sio.event
@@ -53,19 +56,18 @@ class server():
         async def sta(sid):
             print("ready:", sid)
             self.votes.add(sid)
+            await self.sio.emit('message', f'Players ready: {len(self.votes)}/{len(self.session.players)}', 'all')
             if len(self.votes)>=len(self.session.players) and len(self.session.players)>=self.min_player:       #start the game
-                await self.sio.emit('game_start',self.getAllPlayernames(), 'all')
+                await self.sio.emit('game_start', 'all')
                 await self.session.setup()
                 await self.sio.emit('trump', self.session.table.trump, 'all')
                 await self.session.game()
-                
-                
-            else:
-                await self.sio.emit('message', f'Players ready: {len(self.votes)}/{len(self.session.players)}', 'all')
 
-        @self.sio.event
-        def name(sid, name):
-            print(sid, name)
+                
+
+        # @self.sio.event
+        # def name(sid, name):
+        #     print(sid, name)
 
         @self.sio.event
         async def namechange(sid, name):
@@ -73,15 +75,16 @@ class server():
             for i in self.session.players:
                 if i.sid==sid:
                     i.name=name
-            await self.sio.emit("namechange", [sid, self.findPlayerBySid(sid).name])
+            await self.sio.emit("connection", [(sid, name)], skip_sid=sid)
 
 
         @self.sio.event
         async def attacking(sid, cards):
             print(f"{sid} is attacking with {str(cards)}")
-            if len(cards)<self.session.table.allowedCardNumber and self.session.validNumbers(cards):
+            if len(cards)<=self.session.table.allowedCardNumber and self.session.validNumbers(cards):
                 self.session.table.add_active(cards)
                 p=self.findPlayerBySid(sid)
+                print(f"removing {cards} from p.cards")
                 for i in cards:
                     p.cards.remove(i)
                 #await self.sio.emit('changed_game_state',self.session.gameData.get(),'all', skip_sid=sid)f
@@ -96,10 +99,11 @@ class server():
         async def defending(sid, cards):
             if self.session.validDefense(cards):
                 p=self.findPlayerBySid(sid)
+                print(f"removing {cards} from p.cards")
                 for i in range(len(cards)//2):
                     p.cards.remove(cards[i*2+1])
                 self.session.table.remove_active(cards)
-                await self.sio.emit('changed_game_state',self.session.gameData.get(), 'all', skip_sid=sid)
+                #await self.sio.emit('changed_game_state',self.session.gameData.get(), 'all', skip_sid=sid)
                 return True
             return False
 
@@ -116,8 +120,10 @@ class server():
                 return True
             if len(cards)<self.session.table.allowedCardNumber and self.session.validNumbers(cards):
                 p=self.findPlayerBySid(sid)
+                print(f"removing {cards} from p.cards")
                 for i in cards:
                     p.cards.remove(i)
+                                        
                 print(f"{sid} is schiebing with {str(cards)}")
                 self.session.table.add_active(cards)
                 #await self.sio.emit('changed_                                                                                                                                                                                                                                                                                                                                                                                                                                       game_state',self.session.gameData.get(),'all', skip_sid=sid)

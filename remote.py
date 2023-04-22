@@ -8,7 +8,7 @@ class remote(player):
         super(player,self).__init__()
         self.sio=sio
         self.sid=sid
-        self.name="player"
+        self.name=None
         self.cards=[]
         self.data=None
         self.stoppedDefense=False

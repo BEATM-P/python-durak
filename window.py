@@ -44,19 +44,19 @@ class local(player):
     def stopAttack(self):
         asyncio.ensure_future(self.window.sio.emit("stop_attack", None))
 
-    def sendAttack(self):
-        asyncio.ensure_future(self.goAttack())   
+    def sendAttack(self, Acc):
+        asyncio.ensure_future(self.goAttack(Acc))   
 
-    async def goAttack(self):     
-        a=await (self.window.sio.call("attacking", self.window.cardAcc))
-        print(a)
-        if a==True:
-            self.window.cardAcc=[]
-        else:
-            for i in self.window.cardAcc:
+    async def goAttack(self, Acc):     
+        a=await (self.window.sio.call("attacking", Acc))
+        if settings["dbg"]:
+            print(a)
+        if not a:
+            for i in Acc:
                 self.window.table.removeByStr(i)
                 self.window.playercards.insert(card(i, self.window))
-    
+
+
     def schiebt(self,table):
         #window.display(table)
         #return table[0][1]==window.getCard(self.name,self.c              ards)
@@ -67,9 +67,9 @@ class local(player):
         self.defend()
         
     
-    def sendSchub(self):
-        Acc=self.window.cardAcc.copy()
-        self.window.cardAcc=[]
+    def sendSchub(self, Acc):
+        #Acc=self.window.cardAcc.copy()
+        #self.window.cardAcc=[]
         if settings['dbg']:
             print(f'Emmiting Schieben with {Acc}')
         asyncio.ensure_future(self.goSchub(Acc))        #!! BROKEN
@@ -80,7 +80,7 @@ class local(player):
         if not a:   
             for i in Acc:
                 self.window.table.removeByStr(i)
-                self.window.playercards.insert(card(i, self.window))
+                self.window.playercards.insert(card(i, self.window, 'att'))
             
 
     def defend(self):
@@ -101,12 +101,13 @@ class local(player):
             asyncio.ensure_future(self.goSchub([]))
         asyncio.ensure_future(self.window.sio.emit("stop_defense", None))
 
-    def sendDefense(self):
-        asyncio.ensure_future(self.goDefense())
+    def sendDefense(self, Acc):
+        asyncio.ensure_future(self.goDefense(Acc))
 
-    async def goDefense(self):
-        b=await self.window.sio.call("defending", self.window.cardAcc);   
+    async def goDefense(self, Acc):
+        b=await self.window.sio.call("defending", Acc);   
         if b:
+           #TODO
            self.window.cardAcc=[] 
 
 
@@ -184,23 +185,27 @@ class card(QGraphicsPixmapItem):
 
 
     def mouseReleaseEvent(self, event: QGraphicsSceneMouseEvent) -> None:
-        print(self.DragMode=='def', self.window.IsValidDefense(self.window.scene.itemAt(event.lastScenePos(), QTransform()), self.card))
+        if settings["dbg"]:
+            print(self.DragMode=='def', self.window.IsValidDefense(self.window.scene.itemAt(event.lastScenePos(), QTransform()), self.card))
         
         if self.DragMode=='att' and self.window.IsInNumbers(self.card) and event.lastScenePos().y()<400:
             self.DragMode='off'
-            self.window.cardAcc.append(self.card)
+            #self.window.cardAcc.append(self.card)
             self.window.playercards.remove(self)
             self.window.table.insert(self)
             self.window.numbers.append(self.card)
-            self.window.player.sendAttack()
+            self.window.player.sendAttack([self.card])
             #self.window.sendButton.click()
-            print(event.lastScenePos(), self.DragMode)
-            print(f"Attacking with card {self.card}")
+            
+            if settings["dbg"]:
+                print(event.lastScenePos(), self.DragMode)
+                print(f"Attacking with card {self.card}")
 
         
         else:                   #NEEDS TO BE EXECED BEFORE THE IsValidDefense Check
             self.setPos(*self.position)
-            print(self.position, self.DragMode)
+            if settings["dbg"]:
+                print(self.position, self.DragMode)
         
         if self.DragMode=='def' and event.lastScenePos().y()<400 and self.window.IsValidDefense(self.window.scene.itemAt(event.lastScenePos(), QTransform()), self.card)==True:          
             
@@ -208,26 +213,27 @@ class card(QGraphicsPixmapItem):
             if settings["dbg"]:
                 print(f'player.state {self.window.player.state}')
             if self.window.player.state=='sch':
-                self.window.cardAcc=[]
-                self.window.player.sendSchub()
+                #self.window.cardAcc=[]
+                self.window.player.sendSchub([])
                 self.window.player.state='def'
             fakecard=self.window.scene.itemAt(event.lastScenePos(), QTransform())
-            self.window.cardAcc.append(fakecard.card)
-            self.window.cardAcc.append(self.card)
+            #self.window.cardAcc.append(fakecard.card)
+            #self.window.cardAcc.append(self.card)
             self.window.playercards.remove(self)
             self.window.table.addDefense(fakecard.card, self.card)
             self.window.table.refresh()
-            self.window.player.sendDefense()
+            self.window.player.sendDefense([fakecard.card, self.card])
             #self.window.sendButton.click()
-            print(f"cardacc: {self.window.cardAcc}")
-            print(f"defending {fakecard.card} with {self.card}")
+            if settings["dbg"]:
+                print(f"cardacc: {self.window.cardAcc}")
+                print(f"defending {fakecard.card} with {self.card}")
             
         elif self.DragMode=='def' and self.window.player.state=='sch' and self.window.IsInNumbers(self.card) and event.lastScenePos().y()<400:
-            self.window.cardAcc.append(self.card)
+            #self.window.cardAcc.append(self.card)
             self.window.playercards.remove(self)
             self.window.table.insert(self)
             self.window.numbers.append(self.card)
-            self.window.player.sendSchub()
+            self.window.player.sendSchub([self.card])
                                #CLEANUP
         if self.DragMode=='att' or self.window.player.state=='sch':
             self.window.attackIndicator.setVisible(False)
@@ -375,33 +381,89 @@ class stack(QGraphicsProxyWidget):
         self.number.setText(f'Cards left: {n}')
 
 #TEst ing github
-class opponent(QWidget):
-    def __init__(self, str, num, isSelf=False):
+class opponent(QGraphicsProxyWidget):
+    def __init__(self, sid, str ,num=0, isSelf=False):
         super().__init__()
+        self.sid=sid
         self.isSelf=isSelf
         self.name=str
         self.cards=QLabel(f"cards: {num}")            
         layout=QVBoxLayout()
+        cont=QWidget()
         if isSelf:       #return Dummy Opponent to indicate players place in order
-            self.setStyleSheet("background-color:black")
+            cont.setStyleSheet("background-color:black")
             layout.addWidget(QLabel('YOU'))
         else:
             layout.addWidget(QLabel(str))
         layout.addWidget(self.cards)
-        self.setLayout(layout)
-
+        cont.setLayout(layout)
+        self.setWidget(cont)
         
         #scaledToWidth(100)
 
+
+#https://www.geeksforgeeks.org/pyqt5-scrollable-label/
+class chat(QScrollArea):
+
+    # constructor
+    def __init__(self, *args, **kwargs):
+        QScrollArea.__init__(self, *args, **kwargs)
+
+        # making widget resizable
+        self.setWidgetResizable(True)
+        #self.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignBottom)
+
+
+        # making qwidget object
+        content = QWidget(self)
+        self.setWidget(content)
+
+        # vertical box layout
+        lay = QVBoxLayout(content)
+
+        #used to scroll down to screen automatically
+        self.fakelabel=QLabel()
+        # creating label
+        self.label = QLabel(content)
+
+        # setting alignment to the text
+        self.label.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
+
+        # making label multi-line
+        self.label.setWordWrap(True)
+
+        # adding label to the layout
+        lay.addWidget(self.label)
+        lay.addWidget(self.fakelabel)
+    # the setText method
+    def setText(self, text):
+        # setting text to the label
+        self.label.setText(text)
+        self.ensureWidgetVisible(self.fakelabel)
+    def text(self):
+        return self.label.text()
+
+
+
 class lobby(QWidget):
-    def __init__(self) -> None:
+    def __init__(self, window) -> None:
         self.layout=QHBoxLayout()
-        self.layout.addWidget(QLabel("Players:  "))
+        self.label=QLabel("Players:  ")
+        self.layout.addWidget(self.label)
+        self.window=window
+        self.ids=[]
         super().__init__()
+    
+    def display(self):
+        for i in self.window.opps:
+            if not i.sid in self.ids:
+                self.add(i)
 
     def add(self, opp):
-        self.layout.addWidget(QLabel(f"{opp.name}"))
-
+        self.label.setText(f'{self.label.text()}\n{opp.name}')
+        
+        #self.layout.addWidget(QLabel(f"{opp.name}"))
+        #self.ids.append(opp.sid)
 
 class window(QMainWindow):
     def __init__(self) -> None:
@@ -411,7 +473,7 @@ class window(QMainWindow):
         self.numbers=[]
         self.table=table(100,200, self)
         self.stack=stack()
-
+        self.Lobby=lobby(self)
 
 
     async def setup(self):
@@ -426,11 +488,11 @@ class window(QMainWindow):
 
         @self.sio.event
         def message(txt):
-            print(txt)
-            #try:    
             self.textOut.setText(self.textOut.text()+'\n'+txt)
-            #except:
-            #    pass
+            # if self.textOut.lineCount>19:
+            #     self.textOut.setText(self.textOut.text().split('\n', 1)[1])
+            # else:
+            #     self.textOut.lineCount+=1
  
         @self.sio.event
         def trump(string):
@@ -438,22 +500,22 @@ class window(QMainWindow):
             self.stack.setTrump(string)
             print("Trump: ",string)
             
-        def namechange(sid, name):
+
+        @self.sio.event
+        def connection(data):
             if settings["dbg"]:
-                print(f'namechange {sid} to {name}')
-
-
+                print(f"connection {data}")
+            for i in data:
+                if i[0]==self.sio.get_sid():
+                    self.opps.append(opponent(*i, isSelf=True))
+                else:
+                    self.opps.append(opponent(*i))
+            self.Lobby.display()
 
         @self.sio.event
         def game_start(players):
-            opps=[]
             self.readyButton.deleteLater()
-            for i in players:
-                if i==self.name:
-                    opps.append(opponent(i, 6, True))
-                else:
-                    opps.append(opponent(i, 6))
-            self.displayOpponents(opps)
+            self.displayOpponents()
 
         @self.sio.event         #!currently unused
         async def request_game_state():
@@ -629,8 +691,11 @@ class window(QMainWindow):
             self.concedeButton=QPushButton("Concede")
             #self.concedeButton.GrayedOut()
 
-            self.textOut=QLabel()
-            self.textOut.setWordWrap(True)
+            self.textOut=chat()
+            #self.textOut.setWordWrap(True)
+            #self.textOut.lineCount=0
+            #self.textOut.setMaximumHeight(200)
+
             
 
             self.textIn=QLineEdit()
@@ -639,6 +704,7 @@ class window(QMainWindow):
             sublayout.addWidget(self.quitButton)
             #sublayout.addWidget(self.sendButton)
             sublayout.addWidget(self.concedeButton)
+            sublayout.addWidget(self.Lobby)
             sublayout.addWidget(self.textOut)
             sublayout.addWidget(self.textIn)
 
@@ -672,23 +738,23 @@ class window(QMainWindow):
         # refresh opponents card counter and attacker and defender indication
         for i in self.opps:   
             try:
-                game_state["players"][i.widget().name]==None
+                game_state["players"][i.name]==None
             except:
                 self.opps.remove(i)
                 i.widget().setStyleSheet("background-color:yellow")
-                i.widget().cards.setText('0')
+                i.cards.setText('0')
                 break
-            if game_state["players"][i.widget().name][2]=='att':
-                # if i.widget().name==self.player.name:
+            if game_state["players"][i.name][2]=='att':
+                # if i..name==self.player.name:
                 #     self.player.state='att'
                 i.widget().setStyleSheet("background-color:blue")          #TODO Make the colors global variables so custom themes can exist
-            elif game_state["players"][i.widget().name][2]=='def':
-                # if i.widget().name==self.player.name:
+            elif game_state["players"][i.name][2]=='def':
+                # if i..name==self.player.name:
                 #     self.player.state='def'
                 i.widget().setStyleSheet("background-color:red")
             else:
                 i.widget().setStyleSheet("background-color:grey")
-            i.widget().cards.setText(str(game_state["players"][i.widget().name][0]))
+            i.cards.setText(str(game_state["players"][i.name][0]))
 
         #refresh table
         self.table.display(game_state["table"][0])
@@ -733,11 +799,11 @@ class window(QMainWindow):
         asyncio.ensure_future(self.sio.disconnect())
         self.loop.stop()
 
-    def displayOpponents(self, opps):
-        n=len(opps)
-        for i, opp in enumerate(opps):
-            self.opps.append(self.scene.addWidget(opp))
-            self.opps[i].setPos(self.playerPoint[0], self.playerPoint[1])
+    def displayOpponents(self):
+        n=len(self.opps)
+        for i, opp in enumerate(self.opps):
+            self.scene.addItem(opp)
+            opp.setPos(self.playerPoint[0], self.playerPoint[1])
             self.playerPoint=(self.playerPoint[0]+800//n, self.playerPoint[1])
         
     def IsInNumbers(self, str):
