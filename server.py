@@ -32,7 +32,6 @@ class server():
         async def connect(sid, environ):
             print(sid)
             self.sio.enter_room(sid, 'all')
-            self.session.players.append(remote(self.sio,sid))
             data=[]
             for i in self.session.players:
                 data.append((i.sid, i.name))
@@ -71,11 +70,9 @@ class server():
 
         @self.sio.event
         async def namechange(sid, name):
+            self.session.players.append(remote(self.sio,sid, name))
             print(sid)
-            for i in self.session.players:
-                if i.sid==sid:
-                    i.name=name
-            await self.sio.emit("connection", [(sid, name)], skip_sid=sid)
+            await self.sio.emit("connection", [(sid, name)])
 
 
         @self.sio.event

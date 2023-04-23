@@ -4,11 +4,11 @@ from player import player
 
 
 class remote(player):
-    def __init__(self,sio,sid):
+    def __init__(self,sio,sid, name):
         super(player,self).__init__()
         self.sio=sio
         self.sid=sid
-        self.name=None
+        self.name=name
         self.cards=[]
         self.data=None
         self.stoppedDefense=False

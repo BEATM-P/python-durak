@@ -453,17 +453,18 @@ class lobby(QWidget):
         self.window=window
         self.ids=[]
         super().__init__()
-    
+        self.setLayout(self.layout)
+
     def display(self):
         for i in self.window.opps:
-            if not i.sid in self.ids:
+            if not (i.sid in self.ids):
                 self.add(i)
 
     def add(self, opp):
         self.label.setText(f'{self.label.text()}\n{opp.name}')
-        
+        self.ids.append(opp.sid)        
         #self.layout.addWidget(QLabel(f"{opp.name}"))
-        #self.ids.append(opp.sid)
+
 
 class window(QMainWindow):
     def __init__(self) -> None:
@@ -679,12 +680,11 @@ class window(QMainWindow):
             w.setPos(400,300)
             
             
-            #console and buttons
+            #chat and buttons
             sublayout=QVBoxLayout()
 
             #self.sendButton=QPushButton("Attack")
             #self.sendButton.GrayedOut()
-
             self.quitButton=QPushButton("Quit")
             self.quitButton.clicked.connect(self.quit)
             
