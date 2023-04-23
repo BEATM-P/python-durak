@@ -72,7 +72,7 @@ class game():
 
     async def play(self,defe, att1, att2=None): 
         await defe.sio.emit('changed_game_state', self.gameData.get(), 'all') 
-        self.table.allowedCardNumber=len(defe.cards)
+        self.table.allowedCardNumber=len(defe.cards)-len(self.table.active)
         
         await att1.attack(list(self.table.numbers))               #return 0 if defending player wins, otherwise 1
         #await defe.sio.emit('changed_game_state', self.gameData.get(), 'all') 
