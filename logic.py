@@ -9,6 +9,7 @@ cards=[ 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'H7', 'H8', 'H9',
         'E1', 'E2', 'E3', 'E4', 'E5', 'E6', 'E7', 'E8', 'E9',
         'B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8', 'B9']
 
+settings={'tick_rate':0.5}
 
 class gameState():
     def __init__(self, game):
@@ -20,7 +21,7 @@ class gameState():
         for i, p in enumerate(self.game.players):
             if i == self.game.playernum:
                 players[p.name]=(len(p.cards),p.sid, 'def')
-            elif i==self.game.playernum-1 or i==self.game.playernum+1:
+            elif i==(self.game.playernum-1) % len(self.game.players) or i==(self.game.playernum+1) % len(self.game.players):
                 players[p.name]=(len(p.cards),p.sid, 'att')
             else:
                 players[p.name]=(len(p.cards),p.sid, None)
@@ -51,10 +52,10 @@ class game():
                     #determines which player gets attacked TODO Find lowest trump card
         n=len(self.players)
         while n>1:
-            print("self.playernum",self.playernum)   
+            print(f"self.playernum {self.playernum}, len(players) {len(self.players)}")   
             n=len(self.players)
             if n>2:      
-                self.playernum+=await self.play(self.players[self.playernum % n],self.players[(self.playernum-1) % n], self.players[self.playernum+1])
+                self.playernum+=await self.play(self.players[self.playernum % n],self.players[(self.playernum-1) % n], self.players[(self.playernum+1) % n])
             else:
                 self.playernum+=await self.play(self.players[self.playernum % n],self.players[(self.playernum-1) % n])  
             self.playernum=self.playernum % len(self.players)
@@ -71,37 +72,40 @@ class game():
 
     async def play(self,defe, att1, att2=None): 
         await defe.sio.emit('changed_game_state', self.gameData.get(), 'all') 
-        self.table.allowedCardNumber=len(defe.cards)
+        self.table.allowedCardNumber=len(defe.cards)-len(self.table.active)
         
         await att1.attack(list(self.table.numbers))               #return 0 if defending player wins, otherwise 1
         #await defe.sio.emit('changed_game_state', self.gameData.get(), 'all') 
         while self.table.active==[]:
-            time.sleep(3)
+            time.sleep(settings["tick_rate"])
             await defe.sio.emit('changed_game_state', self.gameData.get(), 'all')
         
         await defe.schiebt((self.table.active))
-                               #dont change table, but next player will be attacked
+                
+                
+        if att2!=None:
+            await att2.attack(list(self.table.numbers))   
+
         while defe.stoppedSchub==0 and not defe.stoppedDefense:
-            time.sleep(3)
+            time.sleep(settings["tick_rate"])
             print("waiting for schub")
             await defe.sio.emit('changed_game_state', self.gameData.get(), 'all')
         if defe.stoppedSchub==2:
             return 1
 
-        await defe.defend(self.table.active)
+        #await defe.defend(self.table.active)
+
+
 
         if att2!=None:
-            await att2.attack(list(self.table.numbers))   
-
-        if att2!=None:
-            while (not defe.stoppedDefense) and not (att1.stoppedAttack and att2.stoppedAttack):
-                time.sleep(3)
+            while (not (defe.stoppedDefense and self.table.active!=[])) and not (att1.stoppedAttack and att2.stoppedAttack):
+                time.sleep(settings['tick_rate'])
                 await defe.sio.emit('changed_game_state', self.gameData.get(), 'all')
         
                 #wait (defe.sio.emit('changed_game_state', self.gameData.get(), 'all'))     #!ugly, sio is in every remote player and always the same
         else:
-            while (not defe.stoppedDefense) and not (att1.stoppedAttack):
-                time.sleep(3)
+            while (not (defe.stoppedDefense and self.table.active!=[])) and not (att1.stoppedAttack):
+                time.sleep(settings["tick_rate"])
                 await defe.sio.emit('changed_game_state', self.gameData.get(), 'all')
 
         if self.table.active== []:
@@ -127,8 +131,7 @@ class game():
             print(card)
             return True
         for x in self.table.numbers:
-            print(card)
-            print(x[1], card[1])
+            print(f"valid Number? {x, card}")
             if x[1]==card[1]:
                 return True
         return False
