@@ -330,7 +330,7 @@ class table():
                 if c.card ==str:
                     acc=True
             if not acc:
-                self.insert(card(str, self.window))
+                self.insert(card(str, self.window, "drp"))
         self.refresh()
 
     def addDefense(self, c1, c2):

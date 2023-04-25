@@ -48,7 +48,7 @@ class checks():
         except:
             print(f"item type:  {type(item)}")
             return False
-        return item.DragMode!='def' and checks.IsValidDefense([b, c], trump)
+        return item.DragMode=="drp" and checks.IsValidDefense([b, c], trump)
             # print(f"item card: {item.card}, played card: {c}")
             # b=item.card
             # if b[0]==c[0] and b[1]<c[1]:
