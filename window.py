@@ -4,10 +4,12 @@ from PyQt5 import QtCore
 from qasync import QEventLoop
 import socketio
 import asyncio
-
 import sys
 import os
+
 from player import player
+import logic
+
 
 settings={"dbg": True,"deck":9, "trump":1}
 
@@ -186,9 +188,9 @@ class card(QGraphicsPixmapItem):
 
     def mouseReleaseEvent(self, event: QGraphicsSceneMouseEvent) -> None:
         if settings["dbg"]:
-            print(self.DragMode=='def', self.window.IsValidDefense(self.window.scene.itemAt(event.lastScenePos(), QTransform()), self.card))
+            print(self.DragMode=='def', logic.checks.ClientIsValidDefense(self.window.scene.itemAt(event.lastScenePos(), QTransform()), self.card, self.window.player.trump))
         
-        if self.DragMode=='att' and self.window.IsInNumbers(self.card) and event.lastScenePos().y()<400:
+        if self.DragMode=='att' and logic.checks.IsInNumbers(self.card, self.window.numbers) and event.lastScenePos().y()<400:
             self.DragMode='off'
             #self.window.cardAcc.append(self.card)
             self.window.playercards.remove(self)
@@ -207,7 +209,7 @@ class card(QGraphicsPixmapItem):
             if settings["dbg"]:
                 print(self.position, self.DragMode)
         
-        if self.DragMode=='def' and event.lastScenePos().y()<400 and self.window.IsValidDefense(self.window.scene.itemAt(event.lastScenePos(), QTransform()), self.card)==True:          
+        if self.DragMode=='def' and event.lastScenePos().y()<400 and logic.checks.ClientIsValidDefense(self.window.scene.itemAt(event.lastScenePos(), QTransform()), self.card, self.window.player.trump)==True:          
             
             self.DragMode=='off'
             if settings["dbg"]:
@@ -228,7 +230,7 @@ class card(QGraphicsPixmapItem):
                 print(f"cardacc: {self.window.cardAcc}")
                 print(f"defending {fakecard.card} with {self.card}")
             
-        elif self.DragMode=='def' and self.window.player.state=='sch' and self.window.IsInNumbers(self.card) and event.lastScenePos().y()<400:
+        elif self.DragMode=='def' and self.window.player.state=='sch' and logic.checks.IsInNumbers(self.card, self.window.numbers) and event.lastScenePos().y()<400:
             #self.window.cardAcc.append(self.card)
             self.window.playercards.remove(self)
             self.window.table.insert(self)
@@ -806,28 +808,28 @@ class window(QMainWindow):
             opp.setPos(self.playerPoint[0], self.playerPoint[1])
             self.playerPoint=(self.playerPoint[0]+800//n, self.playerPoint[1])
         
-    def IsInNumbers(self, str):
-        if len(str)!=2:
-            raise Exception(f'card corrupted, {str}')
-        else:
-            if self.numbers==[]:            #! fucks up the if check in card.mouseReleaseEvent
-                return True
-            for i in self.numbers:
-                if i[1]==str[1]:
-                    return True
+    # def IsInNumbers(self, str):
+    #     if len(str)!=2:
+    #         raise Exception(f'card corrupted, {str}')
+    #     else:
+    #         if self.numbers==[]:            #! fucks up the if check in card.mouseReleaseEvent
+    #             return True
+    #         for i in self.numbers:
+    #             if i[1]==str[1]:
+    #                 return True
                 
-    def IsValidDefense(self, item, c)-> bool:
-        if type(item)!=card:
-            print(f"item type:  {type(item)}")
-            return False
-        else:
-            print(f"item card: {item.card}, played card: {c}")
-            b=item.card
-            if b[0]==c[0] and b[1]<c[1]:
-                return True
-            elif  b[0]!=c[0] and c[0]==self.player.trump[0]:
-                return True
-            return False
+    # def IsValidDefense(self, item, c)-> bool:
+    #     if type(item)!=card:
+    #         print(f"item type:  {type(item)}")
+    #         return False
+    #     else:
+    #         print(f"item card: {item.card}, played card: {c}")
+    #         b=item.card
+    #         if b[0]==c[0] and b[1]<c[1]:
+    #             return True
+    #         elif  b[0]!=c[0] and c[0]==self.player.trump[0]:
+    #             return True
+    #         return False
 
     def exec(self, argv):
 

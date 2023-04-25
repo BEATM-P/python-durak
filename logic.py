@@ -4,12 +4,105 @@ import time
 import asyncio
 from PyQt5.QtWidgets import QGraphicsRectItem
 
+import window
+
+
 cards=[ 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'H7', 'H8', 'H9',
         'S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9',
         'E1', 'E2', 'E3', 'E4', 'E5', 'E6', 'E7', 'E8', 'E9',
         'B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8', 'B9']
 
 settings={'tick_rate':0.5}
+
+class settings():
+    def __init__(self):
+        self.data={}
+        
+
+    def trump():
+        return settings.trump
+
+    def dbg():
+        return True
+
+    def deck():
+        return [ 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'H7', 'H8', 'H9',
+        'S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9',
+        'E1', 'E2', 'E3', 'E4', 'E5', 'E6', 'E7', 'E8', 'E9',
+        'B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8', 'B9']
+
+    def tickRate():
+        return 1
+
+
+class checks():
+    def __init__(self, settings) -> None:
+        pass
+
+    def ClientIsValidDefense(item, c, trump)-> bool:       # from window.py
+        #if type(item)!="__main__.card":
+        #    print(f"item type:  {type(item)}")
+        #    return False
+        try:
+            b=item.card
+        except:
+            print(f"item type:  {type(item)}")
+            return False
+        return item.DragMode!='def' and checks.IsValidDefense([b, c], trump)
+            # print(f"item card: {item.card}, played card: {c}")
+            # b=item.card
+            # if b[0]==c[0] and b[1]<c[1]:
+            #     return True
+            # elif  b[0]!=c[0] and c[0]==self.player.trump[0]:
+            #     return True
+            # return False 
+    def IsValidDefense(cards, trump):
+        if len(cards) % 2 !=0:
+            #raise Exception('Invalid Defense')
+            return False
+        for i in range(len(cards)//2):
+            a=cards[i*2]
+            b=cards[i*2+1]
+            if a[0]==b[0] and a[1]<b[1]:
+                pass
+            elif a[0]!=b[0] and b[0]==trump[0]:
+                pass
+            else:
+                return False
+        return True
+
+
+    def IsInNumbers( str, numbers):         # from window.py
+        if len(str)!=2:
+            raise Exception(f'card corrupted, {str}')
+        else:
+            if numbers==[]:           
+                return True
+            for i in numbers:
+                if i[1]==str[1]:
+                    return True
+        return False
+    
+    def AreInNumbers(cards:list, numbers):
+        for i in cards:
+            if not checks.IsInNumbers(i, numbers):
+                print(i)
+                return False
+        return True
+        
+    # def validNumber(self, card):
+    #     if len(self.table.numbers)==0:
+    #         #!!!!!!!!!!!self.table.numbers.add(card)!!!!!!!!
+    #         print(card)
+    #         return True
+    #     for x in self.table.numbers:
+    #         print(f"valid Number? {x, card}")
+    #         if x[1]==card[1]:
+    #             return True
+    #     return False
+
+
+
 
 class gameState():
     def __init__(self, game):
@@ -77,7 +170,7 @@ class game():
         await att1.attack(list(self.table.numbers))               #return 0 if defending player wins, otherwise 1
         #await defe.sio.emit('changed_game_state', self.gameData.get(), 'all') 
         while self.table.active==[]:
-            time.sleep(settings["tick_rate"])
+            time.sleep(settings.tickRate())
             await defe.sio.emit('changed_game_state', self.gameData.get(), 'all')
         
         await defe.schiebt((self.table.active))
@@ -87,7 +180,7 @@ class game():
             await att2.attack(list(self.table.numbers))   
 
         while defe.stoppedSchub==0 and not defe.stoppedDefense:
-            time.sleep(settings["tick_rate"])
+            time.sleep(settings.tickRate())
             print("waiting for schub")
             await defe.sio.emit('changed_game_state', self.gameData.get(), 'all')
         if defe.stoppedSchub==2:
@@ -105,7 +198,7 @@ class game():
                 #wait (defe.sio.emit('changed_game_state', self.gameData.get(), 'all'))     #!ugly, sio is in every remote player and always the same
         else:
             while (not (defe.stoppedDefense and self.table.active!=[])) and not (att1.stoppedAttack):
-                time.sleep(settings["tick_rate"])
+                time.sleep(settings.tickRate())
                 await defe.sio.emit('changed_game_state', self.gameData.get(), 'all')
 
         if self.table.active== []:
@@ -162,6 +255,7 @@ class table():
         self.passive=[]                     #stores already trumped cards that need to be taken if more cards are added and not beaten
         self.numbers=set()                  #stores all numbers with which attackers can legally attack
         self.allowedCardNumber=0
+        settings.trump=self.trump
 
     def mix(self):
         mix=[]  
@@ -209,31 +303,3 @@ class table():
         return self.active==[] and self.passive==[]
 
 
-
-#UNUSED
-class checks():
-    def __init__(self, settings) -> None:
-        pass
-
-    def IsValidDefense(self, item, c)-> bool:       # from window.py
-        if type(item)!=QGraphicsRectItem:
-            print(f"item type:  {type(item)}")
-            return False
-        else:
-            print(f"item card: {item.card}, played card: {c}")
-            b=item.card
-            if b[0]==c[0] and b[1]<c[1]:
-                return True
-            elif  b[0]!=c[0] and c[0]==self.player.trump[0]:
-                return True
-            return False
-
-    def IsInNumbers(self, str):         # from window.py
-        if len(str)!=2:
-            raise Exception(f'card corrupted, {str}')
-        else:
-            if self.numbers==[]:            #! fucks up the if check in card.mouseReleaseEvent
-                return True
-            for i in self.numbers:
-                if i[1]==str[1]:
-                    return True
