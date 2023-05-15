@@ -98,8 +98,13 @@ class server():
                 p=self.findPlayerBySid(sid)
                 print(f"removing {cards} from p.cards")
                 for i in range(len(cards)//2):
-                    p.cards.remove(cards[i*2+1])
-                self.session.table.remove_active(cards)
+                        p.cards.remove(cards[i*2+1])
+                try:
+                    self.session.table.remove_active(cards)
+                except ValueError:
+                    for i in range(len(cards)//2):
+                        p.take(cards[2*i+1])
+                    return False
                 #await self.sio.emit('changed_game_state',self.session.gameData.get(), 'all', skip_sid=sid)
                 return True
             return False

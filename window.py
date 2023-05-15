@@ -90,6 +90,7 @@ class local(player):
             self.state='def'
         if settings['dbg']:
             print(f'self.state {self.state}')
+        self.window.table.initDefense()
         self.window.cardAcc=[]
         self.window.concedeButton.clicked.connect(self.stopDefense)
         # self.window.sendButton.setText("Defend")
@@ -219,12 +220,14 @@ class card(QGraphicsPixmapItem):
                 self.window.player.sendSchub([])
                 self.window.player.state='def'
             fakecard=self.window.scene.itemAt(event.lastScenePos(), QTransform())
+            if fakecard.DragMode=="drp":
+            
             #self.window.cardAcc.append(fakecard.card)
             #self.window.cardAcc.append(self.card)
-            self.window.playercards.remove(self)
-            self.window.table.addDefense(fakecard.card, self.card)
-            self.window.table.refresh()
-            self.window.player.sendDefense([fakecard.card, self.card])
+                self.window.playercards.remove(self)
+                self.window.table.addDefense(fakecard.card, self.card)
+                self.window.table.refresh()
+                self.window.player.sendDefense([fakecard.card, self.card])
             #self.window.sendButton.click()
             if settings["dbg"]:
                 print(f"cardacc: {self.window.cardAcc}")
@@ -338,6 +341,11 @@ class table():
             if i.card==c1:
                 i.addDrop(card(c2, self.window, 'off'))
         self.refresh()
+
+    def initDefense(self):
+        for i in self.cardrow:
+            i.DragMode=="drp"
+
 
     def refresh(self):
         for i, v in enumerate(self.cardrow):
