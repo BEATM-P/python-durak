@@ -220,6 +220,7 @@ class card(QGraphicsPixmapItem):
                 self.window.player.sendSchub([])
                 self.window.player.state='def'
             fakecard=self.window.scene.itemAt(event.lastScenePos(), QTransform())
+            print(f"\n\n fakecard {fakecard.DragMode} {fakecard.card}")
             if fakecard.DragMode=="drp":
             
             #self.window.cardAcc.append(fakecard.card)
@@ -344,7 +345,11 @@ class table():
 
     def initDefense(self):      #!Wird nicht aufgerufen
         for i in self.cardrow:
-            i.DragMode=="drp"
+            if settings["dbg"]:
+                print(f"\n \n {i.card} {i.DragMode}")
+            i.DragMode="drp"
+            if settings["dbg"]:
+                print(f"\n \n {i.card} {i.DragMode}")
 
 
     def refresh(self):
