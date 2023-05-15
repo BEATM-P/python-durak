@@ -188,8 +188,8 @@ class card(QGraphicsPixmapItem):
 
 
     def mouseReleaseEvent(self, event: QGraphicsSceneMouseEvent) -> None:
-        if settings["dbg"]:
-            print(self.DragMode=='def', logic.checks.ClientIsValidDefense(self.window.scene.itemAt(event.lastScenePos(), QTransform()), self.card, self.window.player.trump))
+        # if settings["dbg"]:
+        #     print(self.DragMode=='def', logic.checks.ClientIsValidDefense(self.window.scene.itemAt(event.lastScenePos(), QTransform()), self.card, self.window.player.trump))
         
         if self.DragMode=='att' and logic.checks.IsInNumbers(self.card, self.window.numbers) and event.lastScenePos().y()<400:
             self.DragMode='off'
@@ -210,7 +210,7 @@ class card(QGraphicsPixmapItem):
             if settings["dbg"]:
                 print(self.position, self.DragMode)
         
-        if self.DragMode=='def' and event.lastScenePos().y()<400 and logic.checks.ClientIsValidDefense(self.window.scene.itemAt(event.lastScenePos(), QTransform()), self.card, self.window.player.trump)==True:          
+        if self.DragMode=='def' and event.lastScenePos().y()<400 and logic.checks.ClientIsValidDefense(self.window.scene.itemAt(event.lastScenePos(), QTransform()), self.card, self.window.player.trump):          
             
             self.DragMode=='off'
             if settings["dbg"]:
@@ -297,7 +297,7 @@ class table():
     def __init__(self,x,y, window):
         self.pos=x,y
         self.window=window
-        self.active_cards=[]
+        #self.active_cards=[]
         self.cardrow=[]
 
     def activeByStr(self):
@@ -342,7 +342,7 @@ class table():
                 i.addDrop(card(c2, self.window, 'off'))
         self.refresh()
 
-    def initDefense(self):
+    def initDefense(self):      #!Wird nicht aufgerufen
         for i in self.cardrow:
             i.DragMode=="drp"
 
