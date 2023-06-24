@@ -10,8 +10,8 @@ import os
 from player import player
 import logic
 
-
-settings={"dbg": True,"deck":9, "trump":1}
+settingsRange={"dbg": True,"deck":[9,18], "trump":True, "Sort":["classic", "notclassic"]}
+settings={"dbg": True,"deck":9, "trump":True, "Sort":"classic"}
 
 
 
@@ -591,10 +591,12 @@ class window(QMainWindow):
         Serverbutton.clicked.connect(self.server_setup)
         Clientbutton=QPushButton("Client")
         Clientbutton.clicked.connect((self.client_setup))
-
+        Settingbutton=QPushButton("Settings")
+        Settingbutton.clicked.connect((self.settingsMenu))
         self.layout = QVBoxLayout()
         self.layout.addWidget(Serverbutton)
         self.layout.addWidget(Clientbutton)
+        self.layout.addWidget(Settingbutton)
 
         container=QWidget()
         container.setLayout(self.layout)
@@ -632,7 +634,34 @@ class window(QMainWindow):
         cont.setLayout(layout)
         self.setCentralWidget(cont)
 
+    def settingsMenu(self):
+        rightLayout=QVBoxLayout()
+        leftLayout=QVBoxLayout()
+        rightCont=QWidget()
+        leftCont=QWidget()
+        menuItem={}
+        for key, value in settings.items():
+            if type(value)==str:
+                menuItem[key]=QComboBox()
+                menuItem[key].addItems(settingsRange[key])
+            elif type(value)==int:
+                menuItem[key]=QSpinBox()
+            elif type(value)==bool:
+                menuItem[key]=QCheckBox()
+        for key,widget in menuItem.items():
+            rightLayout.addWidget(widget)
+            leftLayout.addWidget(QLabel(key))
 
+        leftCont.setLayout(leftLayout)
+        rightCont.setLayout(rightLayout)
+
+        layout=QHBoxLayout()
+        layout.addWidget(leftCont)
+        layout.addWidget(rightCont)
+
+        cont=QWidget()
+        cont.setLayout(layout)
+        self.setCentralWidget(cont)
     def server_input(self,s):
         self.server=s
 
