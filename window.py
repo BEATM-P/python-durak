@@ -10,8 +10,8 @@ import os
 from player import player
 import logic
 
-settingsRange={"dbg": True,"deck":[9,18], "trump":True, "Sort":["classic", "notclassic"]}
-settings={"dbg": True,"deck":9, "trump":True, "Sort":"classic"}
+settingsRange={"dbg": True,"deck":["bavarian","double bavarian"], "trump":True, "Sort":["classic", "notclassic"]}
+settings={"dbg": True,"deck":"bavarian", "trump":True, "Sort":"classic"}
 
 
 

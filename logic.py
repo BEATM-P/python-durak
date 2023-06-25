@@ -3,6 +3,7 @@ from remote import remote
 import time
 import asyncio
 from PyQt5.QtWidgets import QGraphicsRectItem
+import configparser
 
 import window
 
@@ -17,22 +18,25 @@ settings={'tick_rate':0.5}
 class settings():
     def __init__(self):
         self.data={}
+        self.file=configparser.ConfigParser()
+        self.file.read("/home/alla/Projects/python-durak/config.ini")
         
 
-    def trump():
-        return settings.trump
+    def trump(self):
+        return self.file["game"]["trump"]
 
-    def dbg():
-        return True
+    def dbg(self):
+        return self.file["debug"]["dbg"]
 
-    def deck():
+    def deck(self):
         return [ 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'H7', 'H8', 'H9',
         'S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9',
         'E1', 'E2', 'E3', 'E4', 'E5', 'E6', 'E7', 'E8', 'E9',
         'B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8', 'B9']
 
-    def tickRate():
-        return 1
+    def tickRate(self):
+        return self.file["server"]["tickrate"]
+    
 
 
 class checks():
